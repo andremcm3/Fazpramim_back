@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Escolha o tipo de cadastro</h2>
+  <a href="{% url 'register_client' %}"><button>Sou cliente</button></a>
+  <br>
+  <a href="{% url 'register_provider' %}"><button>Sou prestador de serviço</button></a>
+{% endblock %}
