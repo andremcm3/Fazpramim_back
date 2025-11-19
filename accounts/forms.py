@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import ClientProfile, ProviderProfile
+from .models import ServiceRequest
 
 
 # --------- FORMULÁRIO GENÉRICO DE CADASTRO (SE USAR) --------- #
@@ -129,3 +130,26 @@ class ProviderProfileForm(forms.ModelForm):
             "identity_document",
             "certifications",
         ]
+
+
+class ServiceRequestForm(forms.ModelForm):
+    class Meta:
+        model = ServiceRequest
+        fields = ["description", "desired_datetime", "proposed_value"]
+        widgets = {
+            "description": forms.Textarea(attrs={
+                "rows": 5,
+                "required": True,
+                "placeholder": "Descreva detalhadamente o serviço que você precisa...",
+                "style": "width:100%; min-height:120px; box-sizing:border-box; padding:8px; background:#fff; color:#000; border:1px solid #ccc; border-radius:4px;"
+            }),
+            "desired_datetime": forms.DateTimeInput(attrs={"type": "datetime-local", "style": "display:block; width:100%; box-sizing:border-box; padding:6px;"}),
+        }
+        # add attribute for proposed_value separately (can't set in widgets dict without overwriting)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proposed_value'].widget.attrs.update({
+            'step': '0.01',
+            'placeholder': '150.00',
+            'style': 'display:block; width:200px; box-sizing:border-box; padding:6px;'
+        })

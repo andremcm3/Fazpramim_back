@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ provider.full_name }}</h1>
+
+{% if provider.professional_email %}
+<p><strong>Email:</strong> {{ provider.professional_email }}</p>
+{% endif %}
+
+{% if provider.technical_qualification %}
+<p><strong>Área/Qualificação:</strong><br>{{ provider.technical_qualification|linebreaks }}</p>
+{% endif %}
+
+{% if provider.service_address %}
+<p><strong>Atende em:</strong><br>{{ provider.service_address|linebreaks }}</p>
+{% endif %}
+
+{% if provider.identity_document %}
+<p><a href="{{ provider.identity_document.url }}" target="_blank">Ver documento de identidade</a></p>
+{% endif %}
+
+{% if provider.certifications %}
+<p><a href="{{ provider.certifications.url }}" target="_blank">Ver certificações</a></p>
+{% endif %}
+
+<p><a href="{% url 'search' %}">Voltar à busca</a></p>
+
+{# Button + modal to create a ServiceRequest (AJAX) #}
+{% if user.is_authenticated %}
+<div style="margin-top:1rem;">
+	<button id="openRequestBtn">Solicitar Serviço</button>
+</div>
+
+<!-- Modal -->
+<div id="requestModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; padding:30px; max-width:720px; width:90%; margin:5% auto; position:relative; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+    <button id="closeModal" style="position:absolute; right:15px; top:15px; background:transparent; border:none; font-size:1.5rem; cursor:pointer; color:#999;">&times;</button>
+    <div id="modalBody">Carregando...</div>
+  </div>
+</div><script>
+function getCookie(name) {
+	const value = `; ${document.cookie}`;
+	const parts = value.split(`; ${name}=`);
+	if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+	const btn = document.getElementById('openRequestBtn');
+	const modal = document.getElementById('requestModal');
+	const closeBtn = document.getElementById('closeModal');
+	const modalBody = document.getElementById('modalBody');
+
+	if(!btn) return;
+
+	btn.addEventListener('click', async function(){
+		modal.style.display = 'flex';
+		modalBody.innerHTML = 'Carregando...';
+		const url = "{% url 'create_request' provider.pk %}";
+		try{
+			const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+			const text = await resp.text();
+			modalBody.innerHTML = text;
+			attachFormHandler(url, modal, modalBody);
+		} catch(e){
+			modalBody.innerHTML = 'Erro ao carregar o formulário.';
+		}
+	});
+
+	closeBtn.addEventListener('click', function(){ modal.style.display = 'none'; modalBody.innerHTML = ''; });
+});
+
+function attachFormHandler(url, modal, modalBody){
+	const form = modalBody.querySelector('form');
+	if(!form) return;
+
+	// Handle cancel button
+	const cancelBtn = modalBody.querySelector('.cancelBtn');
+	if(cancelBtn){
+		cancelBtn.addEventListener('click', function(){ modal.style.display = 'none'; modalBody.innerHTML = ''; });
+	}
+
+	form.addEventListener('submit', async function(ev){
+		ev.preventDefault();
+		const formData = new FormData(form);
+		try{
+			const resp = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+					'X-CSRFToken': getCookie('csrftoken')
+				},
+				body: formData,
+			});
+
+			if(resp.ok){
+				const data = await resp.json();
+				modalBody.innerHTML = '<p style="color:green;">' + (data.message || 'Solicitação enviada com sucesso.') + '</p>';
+				setTimeout(()=>{ modal.style.display = 'none'; modalBody.innerHTML = ''; }, 1200);
+			} else if(resp.status === 400){
+				const err = await resp.json();
+				// show errors simply
+				const errDiv = document.createElement('div');
+				errDiv.style.color = 'red';
+				errDiv.innerText = JSON.stringify(err.errors || err, null, 2);
+				// remove previous errors
+				const prev = modalBody.querySelector('.errors'); if(prev) prev.remove();
+				errDiv.className = 'errors';
+				modalBody.prepend(errDiv);
+			} else {
+				modalBody.innerHTML = '<p style="color:red;">Erro ao enviar a solicitação.</p>';
+			}
+		} catch(e){
+			modalBody.innerHTML = '<p style="color:red;">Erro de rede ao enviar a solicitação.</p>';
+		}
+	});
+}
+</script>
+{% endif %}
+
+{% endblock %}

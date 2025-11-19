@@ -24,6 +24,21 @@
 <main>
     <h1>Meu Perfil</h1>
 
+    {% if is_provider %}
+    <div style="margin-bottom:2rem;">
+        <h2>Minhas Solicitações de Serviço</h2>
+        <p><a href="{% url 'provider_requests' %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px;">Ver Solicitações Recebidas</a></p>
+    </div>
+    {% endif %}
+
+    {% if is_client %}
+    <div style="margin-bottom:2rem;">
+        <h2>Minhas Solicitações Enviadas</h2>
+        <p><a href="{% url 'client_requests' %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px;">Ver Minhas Solicitações</a></p>
+    </div>
+    {% endif %}
+
+    <h2>Editar Perfil</h2>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}

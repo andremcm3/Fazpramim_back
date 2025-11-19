@@ -9,7 +9,23 @@ from .forms import (
     ClientProfileForm,
     ProviderProfileForm,
 )
+from .forms import ServiceRequestForm
 from .models import ClientProfile, ProviderProfile
+from .models import ServiceRequest, ChatMessage
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+try:
+    # Import DRF views for API integration (used by urls)
+    from .api.views import (
+        CreateServiceRequestAPIView,
+        ProviderRequestsListAPIView,
+        ServiceRequestDetailAPIView,
+    )
+except Exception:
+    # If DRF is not available, the import will fail but views will still work
+    pass
+from django.shortcuts import get_object_or_404
 
 
 # --------- CADASTRO GENÉRICO (SE AINDA QUISER USAR) --------- #
@@ -96,3 +112,130 @@ def my_profile(request):
         "is_provider": is_provider,
     }
     return render(request, "accounts/my_profile.html", context)
+
+
+def provider_detail(request, pk):
+    """Página pública com os detalhes de um prestador de serviço."""
+    provider = get_object_or_404(ProviderProfile, pk=pk)
+    context = {"provider": provider}
+    return render(request, "accounts/provider_detail.html", context)
+
+
+@login_required
+def create_request(request, pk):
+    provider = get_object_or_404(ProviderProfile, pk=pk)
+
+    # Não permitir que o próprio prestador peça serviço a si mesmo
+    if hasattr(request.user, 'provider_profile') and request.user.provider_profile.pk == provider.pk:
+        messages.error(request, "Você não pode solicitar um serviço para si mesmo.")
+        return redirect('provider_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = ServiceRequestForm(request.POST)
+        if form.is_valid():
+            sr = form.save(commit=False)
+            sr.provider = provider
+            sr.client = request.user
+            sr.save()
+            # AJAX request -> return JSON
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Solicitação enviada com sucesso.',
+                    'request_id': sr.id,
+                })
+
+            messages.success(request, 'Solicitação enviada com sucesso.')
+            return redirect('provider_detail', pk=pk)
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                # return form errors as json
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    else:
+        form = ServiceRequestForm()
+
+    return render(request, 'accounts/provider_request_form.html', {'form': form, 'provider': provider})
+
+
+@login_required
+def provider_requests(request):
+    # Lista de solicitações para o prestador logado
+    if not hasattr(request.user, 'provider_profile'):
+        return redirect('my_profile')
+
+    provider = request.user.provider_profile
+    requests_qs = ServiceRequest.objects.filter(provider=provider).order_by('-created_at')
+    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'provider'})
+
+
+@login_required
+def client_requests(request):
+    # Lista de solicitações enviadas pelo cliente logado
+    requests_qs = ServiceRequest.objects.filter(client=request.user).order_by('-created_at')
+    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'client'})
+
+
+@login_required
+def request_detail(request, pk):
+    sr = get_object_or_404(ServiceRequest, pk=pk)
+
+    # Permitir visualização se for o provider dono ou o cliente que enviou
+    if not (hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider) and request.user != sr.client:
+        return redirect('home')
+
+    # Aceitar / rejeitar (apenas provider dono)
+    if request.method == 'POST' and hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider:
+        action = request.POST.get('action')
+        if action == 'accept':
+            sr.status = ServiceRequest.STATUS_ACCEPTED
+            sr.save()
+            messages.success(request, 'Solicitação aceita.')
+        elif action == 'reject':
+            sr.status = ServiceRequest.STATUS_REJECTED
+            sr.save()
+            messages.success(request, 'Solicitação rejeitada.')
+        return redirect('request_detail', pk=pk)
+
+    return render(request, 'accounts/request_detail.html', {'request_obj': sr})
+
+
+@login_required
+def chat_view(request, pk):
+    sr = get_object_or_404(ServiceRequest, pk=pk)
+
+    # Verificar se é o prestador ou cliente
+    is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
+    is_client = request.user == sr.client
+
+    if not (is_provider or is_client):
+        messages.error(request, 'Você não tem permissão para acessar este chat.')
+        return redirect('home')
+
+    # Apenas permitir chat se a solicitação foi aceita
+    if sr.status != ServiceRequest.STATUS_ACCEPTED:
+        messages.warning(request, 'O chat está disponível apenas para solicitações aceitas.')
+        return redirect('request_detail', pk=pk)
+
+    # Marcar mensagens como lidas para o usuário atual
+    ChatMessage.objects.filter(service_request=sr).exclude(sender=request.user).update(is_read=True)
+
+    # Processar envio de mensagem
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            ChatMessage.objects.create(
+                service_request=sr,
+                sender=request.user,
+                content=content
+            )
+            return redirect('chat_view', pk=pk)
+
+    messages_qs = sr.messages.all()
+    
+    context = {
+        'service_request': sr,
+        'messages': messages_qs,
+        'is_provider': is_provider,
+        'is_client': is_client,
+    }
+    return render(request, 'accounts/chat.html', context)
