@@ -1,0 +1,15 @@
+<h1>Página de Pesquisa</h1>
+
+<form method="get" action="{% url 'search' %}">
+    <input type="text" name="q" placeholder="Buscar...">
+    <button type="submit">Pesquisar</button>
+</form>
+
+{% if results %}
+    <h2>Resultados:</h2>
+    <ul>
+        {% for r in results %}
+            <li>{{ r }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}

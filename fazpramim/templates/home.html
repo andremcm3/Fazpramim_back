@@ -2,8 +2,16 @@
 
 {% block content %}
   {% if user.is_authenticated %}
-    <p>Olá, {{ user.username }} | <a href="{% url 'logout' %}">Sair</a></p>
+    <p>
+      Olá, {{ user.username }} |
+      <a href="{% url 'logout' %}">Sair</a> |
+      <a href="{% url 'search' %}">Pesquisar</a>
+    </p>
   {% else %}
-    <p><a href="{% url 'login' %}">Entrar</a> | <a href="{% url 'register' %}">Registrar</a></p>
+    <p>
+      <a href="{% url 'login' %}">Entrar</a> |
+      <a href="{% url 'register' %}">Registrar</a> |
+      <a href="{% url 'search' %}">Pesquisar</a>
+    </p>
   {% endif %}
 {% endblock %}
