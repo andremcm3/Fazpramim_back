@@ -19,4 +19,6 @@ urlpatterns = [
 
     # >>> NOVO: página "Meu Perfil"
     path('meu-perfil/', views.my_profile, name='my_profile'),
+    # Perfil público de prestador (visualização por qualquer usuário)
+    path('prestador/<int:pk>/', views.provider_detail, name='provider_detail'),
 ]

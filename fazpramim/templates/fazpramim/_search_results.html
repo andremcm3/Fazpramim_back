@@ -1,0 +1,23 @@
+{% if results %}
+    <h2>Resultados ({{ results|length }}):</h2>
+    <ul>
+        {% for provider in results %}
+            <li>
+                <a href="{% url 'provider_detail' provider.id %}">
+                    <strong>{{ provider.full_name }}</strong>
+                </a>
+                {% if provider.professional_email %}<br>Email: {{ provider.professional_email }}{% endif %}
+                {% if provider.technical_qualification %}
+                    <br>Área/Qualificação: {{ provider.technical_qualification }}
+                {% endif %}
+                {% if provider.service_address %}
+                    <br>Atende em: {{ provider.service_address }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    {% if query %}
+        <p>Nenhum prestador encontrado para "{{ query }}".</p>
+    {% endif %}
+{% endif %}

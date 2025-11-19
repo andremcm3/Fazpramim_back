@@ -1,31 +1,45 @@
 <h1>Página de Pesquisa</h1>
 
-<form method="get" action="{% url 'search' %}">
-    <input type="text" name="q" placeholder="Buscar por nome ou área" value="{{ query }}">
+<form id="search-form" method="get" action="{% url 'search' %}">
+    <input id="search-input" type="text" name="q" placeholder="Buscar por nome ou área" value="{{ query }}" autocomplete="off">
     <button type="submit">Pesquisar</button>
     {% if query %}
         <p>Mostrando resultados para: "{{ query }}"</p>
     {% endif %}
 </form>
 
-{% if results %}
-    <h2>Resultados ({{ results|length }}):</h2>
-    <ul>
-        {% for provider in results %}
-            <li>
-                <strong>{{ provider.full_name }}</strong>
-                {% if provider.professional_email %}<br>Email: {{ provider.professional_email }}{% endif %}
-                {% if provider.technical_qualification %}
-                    <br>Área/Qualificação: {{ provider.technical_qualification }}
-                {% endif %}
-                {% if provider.service_address %}
-                    <br>Atende em: {{ provider.service_address }}
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    {% if query %}
-        <p>Nenhum prestador encontrado para "{{ query }}".</p>
-    {% endif %}
-{% endif %}
+<div id="results-container">
+    {% include 'fazpramim/_search_results.html' %}
+</div>
+
+<script>
+// Busca dinâmica: faz requisições enquanto o usuário digita (debounce simples)
+(function(){
+    const input = document.getElementById('search-input');
+    const resultsContainer = document.getElementById('results-container');
+    let timeout = null;
+
+    function renderHTML(html){
+        resultsContainer.innerHTML = html;
+    }
+
+    async function doSearch(q){
+        const url = new URL(window.location.href);
+        url.searchParams.set('q', q);
+        // sinaliza como AJAX
+        const resp = await fetch(url.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+        if(resp.ok){
+            const text = await resp.text();
+            renderHTML(text);
+        }
+    }
+
+    input.addEventListener('input', function(e){
+        const q = e.target.value.trim();
+        clearTimeout(timeout);
+        timeout = setTimeout(function(){
+            doSearch(q);
+        }, 300);
+    });
+})();
+</script>

@@ -1,0 +1,23 @@
+<h1>{{ provider.full_name }}</h1>
+
+{% if provider.professional_email %}
+<p><strong>Email:</strong> {{ provider.professional_email }}</p>
+{% endif %}
+
+{% if provider.technical_qualification %}
+<p><strong>Área/Qualificação:</strong><br>{{ provider.technical_qualification|linebreaks }}</p>
+{% endif %}
+
+{% if provider.service_address %}
+<p><strong>Atende em:</strong><br>{{ provider.service_address|linebreaks }}</p>
+{% endif %}
+
+{% if provider.identity_document %}
+<p><a href="{{ provider.identity_document.url }}" target="_blank">Ver documento de identidade</a></p>
+{% endif %}
+
+{% if provider.certifications %}
+<p><a href="{{ provider.certifications.url }}" target="_blank">Ver certificações</a></p>
+{% endif %}
+
+<p><a href="{% url 'search' %}">Voltar à busca</a></p>

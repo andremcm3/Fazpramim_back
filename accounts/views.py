@@ -10,6 +10,7 @@ from .forms import (
     ProviderProfileForm,
 )
 from .models import ClientProfile, ProviderProfile
+from django.shortcuts import get_object_or_404
 
 
 # --------- CADASTRO GENÉRICO (SE AINDA QUISER USAR) --------- #
@@ -96,3 +97,10 @@ def my_profile(request):
         "is_provider": is_provider,
     }
     return render(request, "accounts/my_profile.html", context)
+
+
+def provider_detail(request, pk):
+    """Página pública com os detalhes de um prestador de serviço."""
+    provider = get_object_or_404(ProviderProfile, pk=pk)
+    context = {"provider": provider}
+    return render(request, "accounts/provider_detail.html", context)
