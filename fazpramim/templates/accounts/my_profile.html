@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Perfil</title>
+</head>
+<body>
+
+<header>
+    <nav>
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'search' %}">Pesquisar</a>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'my_profile' %}">Meu Perfil</a>
+            <a href="{% url 'logout' %}">Sair</a>
+        {% else %}
+            <a href="{% url 'login' %}">Entrar</a>
+            <a href="{% url 'register_choice' %}">Registrar</a>
+        {% endif %}
+    </nav>
+</header>
+
+<main>
+    <h1>Meu Perfil</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Salvar</button>
+    </form>
+</main>
+
+</body>
+</html>
