@@ -1,7 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
 
+{% if user == request_obj.provider.user %}
 <p><a href="{% url 'provider_requests' %}">&larr; Voltar às Solicitações</a></p>
+{% elif user == request_obj.client %}
+<p><a href="{% url 'client_requests' %}">&larr; Voltar às Minhas Solicitações</a></p>
+{% else %}
+<p><a href="{% url 'my_profile' %}">&larr; Voltar ao Perfil</a></p>
+{% endif %}
 
 <div style="max-width:800px; margin:2rem auto; padding:2rem; border:1px solid #ddd; border-radius:12px; background:#fff;">
     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1.5rem;">
@@ -48,7 +54,8 @@
         </div>
     </div>
 
-    {% if user.is_authenticated and user == request_obj.provider.user %}
+    {% if user.is_authenticated %}
+    {% if user == request_obj.provider.user %}
         {% if request_obj.status == 'pending' %}
             <div style="display:flex; gap:1rem; padding-top:1.5rem; border-top:2px solid #ddd;">
                 <form method="post" action="" style="flex:1;">
@@ -64,17 +71,34 @@
                     </button>
                 </form>
             </div>
+        {% elif request_obj.status == 'accepted' %}
+            <div style="padding-top:1.5rem; border-top:2px solid #ddd;">
+                <a href="{% url 'chat_view' request_obj.id %}" style="display:block; padding:1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:8px; text-align:center; font-size:1rem; font-weight:600;">
+                    💬 Abrir Chat com o Cliente
+                </a>
+            </div>
         {% else %}
-            <div style="padding:1rem; background:#e8f5e9; border-radius:8px; text-align:center; color:#2e7d32; font-weight:600;">
-                Você já respondeu a esta solicitação.
+            <div style="padding:1rem; background:#f8d7da; border-radius:8px; text-align:center; color:#721c24; font-weight:600;">
+                Solicitação rejeitada.
+            </div>
+        {% endif %}
+    {% elif user == request_obj.client %}
+        {% if request_obj.status == 'accepted' %}
+            <div style="padding-top:1.5rem; border-top:2px solid #ddd;">
+                <a href="{% url 'chat_view' request_obj.id %}" style="display:block; padding:1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:8px; text-align:center; font-size:1rem; font-weight:600;">
+                    💬 Abrir Chat com o Prestador
+                </a>
+            </div>
+        {% elif request_obj.status == 'pending' %}
+            <div style="padding:1rem; background:#fff3cd; border-radius:8px; text-align:center; color:#856404;">
+                Você enviou esta solicitação. Aguarde a resposta do prestador.
+            </div>
+        {% else %}
+            <div style="padding:1rem; background:#f8d7da; border-radius:8px; text-align:center; color:#721c24;">
+                Esta solicitação foi rejeitada pelo prestador.
             </div>
         {% endif %}
     {% endif %}
-
-    {% if user.is_authenticated and user == request_obj.client %}
-        <div style="padding:1rem; background:#e3f2fd; border-radius:8px; text-align:center; color:#1565c0;">
-            Você enviou esta solicitação. Aguarde a resposta do prestador.
-        </div>
     {% endif %}
 </div>
 

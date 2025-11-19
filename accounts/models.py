@@ -73,3 +73,21 @@ class ServiceRequest(models.Model):
 
     def __str__(self):
         return f"ServiceRequest(provider={self.provider.user.username}, client={self.client.username}, status={self.status})"
+
+
+class ChatMessage(models.Model):
+    service_request = models.ForeignKey(
+        ServiceRequest, on_delete=models.CASCADE, related_name='messages'
+    )
+    sender = models.ForeignKey(
+        'auth.User', on_delete=models.CASCADE, related_name='sent_messages'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"ChatMessage(request={self.service_request.id}, sender={self.sender.username}, at={self.created_at})"

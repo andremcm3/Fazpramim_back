@@ -1,17 +1,21 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Solicitações Recebidas</h1>
+<h1>{% if view_type == 'provider' %}Solicitações Recebidas{% else %}Minhas Solicitações{% endif %}</h1>
 
 <p><a href="{% url 'my_profile' %}">&larr; Voltar ao Meu Perfil</a></p>
 
 {% if requests %}
 <div style="display:flex; flex-direction:column; gap:1rem; margin-top:1.5rem;">
     {% for r in requests %}
-    <div style="border:1px solid #ddd; padding:1.5rem; border-radius:8px; background:#f9f9f9;">
+        <div style="border:1px solid #ddd; padding:1.5rem; border-radius:8px; background:#f9f9f9;">
         <div style="display:flex; justify-content:space-between; align-items:start;">
             <div>
                 <h3 style="margin:0 0 0.5rem 0;">Solicitação #{{ r.id }}</h3>
+                {% if view_type == 'provider' %}
                 <p style="margin:0.25rem 0;"><strong>Cliente:</strong> {{ r.client.username }}</p>
+                {% else %}
+                <p style="margin:0.25rem 0;"><strong>Prestador:</strong> {{ r.provider.full_name }}</p>
+                {% endif %}
                 <p style="margin:0.25rem 0;"><strong>Status:</strong> 
                     <span style="padding:0.25rem 0.5rem; border-radius:4px; background:{% if r.status == 'pending' %}#FFA500{% elif r.status == 'accepted' %}#28A745{% else %}#DC3545{% endif %}; color:white; font-size:0.85rem;">
                         {{ r.get_status_display }}

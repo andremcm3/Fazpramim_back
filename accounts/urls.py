@@ -25,8 +25,12 @@ urlpatterns = [
     path('prestador/<int:pk>/solicitar/', views.create_request, name='create_request'),
     # Área do prestador: ver solicitações recebidas
     path('meu-perfil/solicitacoes/', views.provider_requests, name='provider_requests'),
+    # Área do cliente: ver solicitações enviadas
+    path('minhas-solicitacoes/', views.client_requests, name='client_requests'),
     # Detalhe da solicitação (provider ou client podem ver)
     path('solicitacao/<int:pk>/', views.request_detail, name='request_detail'),
+    # Chat para solicitação aceita
+    path('solicitacao/<int:pk>/chat/', views.chat_view, name='chat_view'),
     # API REST para solicitações (DRF)
     path('api/providers/<int:pk>/requests/', views.CreateServiceRequestAPIView.as_view(), name='api_create_request'),
     path('api/provider/requests/', views.ProviderRequestsListAPIView.as_view(), name='api_provider_requests'),

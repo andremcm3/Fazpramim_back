@@ -31,6 +31,13 @@
     </div>
     {% endif %}
 
+    {% if is_client %}
+    <div style="margin-bottom:2rem;">
+        <h2>Minhas Solicitações Enviadas</h2>
+        <p><a href="{% url 'client_requests' %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px;">Ver Minhas Solicitações</a></p>
+    </div>
+    {% endif %}
+
     <h2>Editar Perfil</h2>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}

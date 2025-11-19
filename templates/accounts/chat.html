@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div style="max-width:900px; margin:1rem auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h1 style="margin:0;">Chat - Solicitação #{{ service_request.id }}</h1>
+        <a href="{% url 'request_detail' service_request.id %}" style="padding:0.5rem 1rem; background:#6c757d; color:white; text-decoration:none; border-radius:6px;">&larr; Voltar aos Detalhes</a>
+    </div>
+
+    <div style="padding:1rem; background:#f0f0f0; border-radius:8px; margin-bottom:1rem;">
+        <p style="margin:0;"><strong>Prestador:</strong> {{ service_request.provider.full_name }}</p>
+        <p style="margin:0.25rem 0 0 0;"><strong>Cliente:</strong> {{ service_request.client.username }}</p>
+    </div>
+
+    <div id="chatMessages" style="height:500px; overflow-y:auto; padding:1rem; background:#fff; border:1px solid #ddd; border-radius:8px; margin-bottom:1rem;">
+        {% if messages %}
+            {% for msg in messages %}
+            <div style="margin-bottom:1rem; display:flex; {% if msg.sender == user %}justify-content:flex-end;{% else %}justify-content:flex-start;{% endif %}">
+                <div style="max-width:70%; padding:0.75rem 1rem; border-radius:12px; {% if msg.sender == user %}background:#4A90E2; color:white; border-bottom-right-radius:4px;{% else %}background:#e9ecef; color:#000; border-bottom-left-radius:4px;{% endif %}">
+                    <p style="margin:0; font-size:0.85rem; opacity:0.8; margin-bottom:0.25rem;">
+                        <strong>{% if msg.sender == service_request.provider.user %}{{ service_request.provider.full_name }}{% else %}{{ msg.sender.username }}{% endif %}</strong>
+                    </p>
+                    <p style="margin:0; word-wrap:break-word;">{{ msg.content|linebreaks }}</p>
+                    <p style="margin:0.5rem 0 0 0; font-size:0.75rem; opacity:0.7; text-align:right;">{{ msg.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align:center; color:#999; padding:2rem;">Nenhuma mensagem ainda. Inicie a conversa!</p>
+        {% endif %}
+    </div>
+
+    <form method="post" style="display:flex; gap:0.5rem;">
+        {% csrf_token %}
+        <textarea name="content" placeholder="Digite sua mensagem..." required style="flex:1; padding:0.75rem; border:1px solid #ddd; border-radius:8px; resize:vertical; min-height:60px; font-family:inherit;"></textarea>
+        <button type="submit" style="padding:0.75rem 1.5rem; background:#4A90E2; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Enviar</button>
+    </form>
+</div>
+
+<script>
+// Auto scroll to bottom on load
+document.addEventListener('DOMContentLoaded', function(){
+    const chatDiv = document.getElementById('chatMessages');
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+});
+</script>
+
+{% endblock %}

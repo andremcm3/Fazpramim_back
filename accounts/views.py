@@ -11,7 +11,7 @@ from .forms import (
 )
 from .forms import ServiceRequestForm
 from .models import ClientProfile, ProviderProfile
-from .models import ServiceRequest
+from .models import ServiceRequest, ChatMessage
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
@@ -165,7 +165,14 @@ def provider_requests(request):
 
     provider = request.user.provider_profile
     requests_qs = ServiceRequest.objects.filter(provider=provider).order_by('-created_at')
-    return render(request, 'accounts/request_list.html', {'requests': requests_qs})
+    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'provider'})
+
+
+@login_required
+def client_requests(request):
+    # Lista de solicitações enviadas pelo cliente logado
+    requests_qs = ServiceRequest.objects.filter(client=request.user).order_by('-created_at')
+    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'client'})
 
 
 @login_required
@@ -190,3 +197,45 @@ def request_detail(request, pk):
         return redirect('request_detail', pk=pk)
 
     return render(request, 'accounts/request_detail.html', {'request_obj': sr})
+
+
+@login_required
+def chat_view(request, pk):
+    sr = get_object_or_404(ServiceRequest, pk=pk)
+
+    # Verificar se é o prestador ou cliente
+    is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
+    is_client = request.user == sr.client
+
+    if not (is_provider or is_client):
+        messages.error(request, 'Você não tem permissão para acessar este chat.')
+        return redirect('home')
+
+    # Apenas permitir chat se a solicitação foi aceita
+    if sr.status != ServiceRequest.STATUS_ACCEPTED:
+        messages.warning(request, 'O chat está disponível apenas para solicitações aceitas.')
+        return redirect('request_detail', pk=pk)
+
+    # Marcar mensagens como lidas para o usuário atual
+    ChatMessage.objects.filter(service_request=sr).exclude(sender=request.user).update(is_read=True)
+
+    # Processar envio de mensagem
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            ChatMessage.objects.create(
+                service_request=sr,
+                sender=request.user,
+                content=content
+            )
+            return redirect('chat_view', pk=pk)
+
+    messages_qs = sr.messages.all()
+    
+    context = {
+        'service_request': sr,
+        'messages': messages_qs,
+        'is_provider': is_provider,
+        'is_client': is_client,
+    }
+    return render(request, 'accounts/chat.html', context)
