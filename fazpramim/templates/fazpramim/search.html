@@ -1,15 +1,31 @@
 <h1>Página de Pesquisa</h1>
 
 <form method="get" action="{% url 'search' %}">
-    <input type="text" name="q" placeholder="Buscar...">
+    <input type="text" name="q" placeholder="Buscar por nome ou área" value="{{ query }}">
     <button type="submit">Pesquisar</button>
+    {% if query %}
+        <p>Mostrando resultados para: "{{ query }}"</p>
+    {% endif %}
 </form>
 
 {% if results %}
-    <h2>Resultados:</h2>
+    <h2>Resultados ({{ results|length }}):</h2>
     <ul>
-        {% for r in results %}
-            <li>{{ r }}</li>
+        {% for provider in results %}
+            <li>
+                <strong>{{ provider.full_name }}</strong>
+                {% if provider.professional_email %}<br>Email: {{ provider.professional_email }}{% endif %}
+                {% if provider.technical_qualification %}
+                    <br>Área/Qualificação: {{ provider.technical_qualification }}
+                {% endif %}
+                {% if provider.service_address %}
+                    <br>Atende em: {{ provider.service_address }}
+                {% endif %}
+            </li>
         {% endfor %}
     </ul>
+{% else %}
+    {% if query %}
+        <p>Nenhum prestador encontrado para "{{ query }}".</p>
+    {% endif %}
 {% endif %}
