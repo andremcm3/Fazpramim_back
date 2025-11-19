@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<p><a href="{% url 'provider_requests' %}">&larr; Voltar às Solicitações</a></p>
+
+<div style="max-width:800px; margin:2rem auto; padding:2rem; border:1px solid #ddd; border-radius:12px; background:#fff;">
+    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1.5rem;">
+        <h1 style="margin:0;">Solicitação #{{ request_obj.id }}</h1>
+        <span style="padding:0.5rem 1rem; border-radius:6px; font-weight:600; background:{% if request_obj.status == 'pending' %}#FFA500{% elif request_obj.status == 'accepted' %}#28A745{% else %}#DC3545{% endif %}; color:white;">
+            {{ request_obj.get_status_display }}
+        </span>
+    </div>
+
+    <div style="display:grid; gap:1rem; margin-bottom:2rem;">
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Prestador</p>
+            <p style="margin:0.25rem 0 0 0; font-weight:600; font-size:1.1rem;">{{ request_obj.provider.full_name }}</p>
+        </div>
+
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Cliente</p>
+            <p style="margin:0.25rem 0 0 0; font-weight:600;">{{ request_obj.client.username }}</p>
+            <p style="margin:0.25rem 0 0 0; color:#666;">{{ request_obj.client.email }}</p>
+        </div>
+
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Descrição do Serviço</p>
+            <p style="margin:0.5rem 0 0 0;">{{ request_obj.description|linebreaks }}</p>
+        </div>
+
+        {% if request_obj.desired_datetime %}
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Horário Desejado</p>
+            <p style="margin:0.25rem 0 0 0; font-weight:600;">{{ request_obj.desired_datetime|date:"d/m/Y H:i" }}</p>
+        </div>
+        {% endif %}
+
+        {% if request_obj.proposed_value %}
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Valor Proposto</p>
+            <p style="margin:0.25rem 0 0 0; font-weight:600; font-size:1.2rem; color:#28A745;">R$ {{ request_obj.proposed_value }}</p>
+        </div>
+        {% endif %}
+
+        <div style="padding:1rem; background:#f9f9f9; border-radius:8px;">
+            <p style="margin:0; color:#666; font-size:0.9rem;">Data da Solicitação</p>
+            <p style="margin:0.25rem 0 0 0;">{{ request_obj.created_at|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+
+    {% if user.is_authenticated and user == request_obj.provider.user %}
+        {% if request_obj.status == 'pending' %}
+            <div style="display:flex; gap:1rem; padding-top:1.5rem; border-top:2px solid #ddd;">
+                <form method="post" action="" style="flex:1;">
+                    {% csrf_token %}
+                    <button name="action" value="accept" type="submit" style="width:100%; padding:1rem; background:#28A745; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
+                        ✓ Aceitar Solicitação
+                    </button>
+                </form>
+                <form method="post" action="" style="flex:1;">
+                    {% csrf_token %}
+                    <button name="action" value="reject" type="submit" style="width:100%; padding:1rem; background:#DC3545; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
+                        ✗ Rejeitar Solicitação
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div style="padding:1rem; background:#e8f5e9; border-radius:8px; text-align:center; color:#2e7d32; font-weight:600;">
+                Você já respondeu a esta solicitação.
+            </div>
+        {% endif %}
+    {% endif %}
+
+    {% if user.is_authenticated and user == request_obj.client %}
+        <div style="padding:1rem; background:#e3f2fd; border-radius:8px; text-align:center; color:#1565c0;">
+            Você enviou esta solicitação. Aguarde a resposta do prestador.
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

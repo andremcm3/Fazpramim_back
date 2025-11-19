@@ -1,0 +1,36 @@
+<h2 style="margin-bottom:0.5rem;">Solicitar Serviço</h2>
+<p style="color:#666; margin-bottom:1.5rem;">Preencha os detalhes da sua solicitação e aguarde a resposta do prestador</p>
+
+<form method="post" action="">
+    {% csrf_token %}
+    
+    <div style="margin-bottom:1.2rem;">
+        <label style="display:flex; align-items:center; font-weight:600; margin-bottom:0.5rem;">
+            <span style="margin-right:0.5rem;">💬</span> Descrição do Serviço <span style="color:red;">*</span>
+        </label>
+        {{ form.description }}
+    </div>
+    
+    <div style="margin-bottom:1.2rem;">
+        <label style="display:flex; align-items:center; font-weight:600; margin-bottom:0.5rem;">
+            <span style="margin-right:0.5rem;">📅</span> Horário Desejado <span style="color:red;">*</span>
+        </label>
+        {{ form.desired_datetime }}
+    </div>
+    
+    <div style="margin-bottom:1.5rem;">
+        <label style="display:flex; align-items:center; font-weight:600; margin-bottom:0.5rem;">
+            <span style="margin-right:0.5rem;">💵</span> Valor Proposto (R$) <span style="color:red;">*</span>
+        </label>
+        {{ form.proposed_value }}
+    </div>
+    
+    <div style="display:flex; gap:1rem;">
+        <button type="button" class="cancelBtn" style="flex:1; padding:0.75rem; background:#f0f0f0; border:1px solid #ddd; border-radius:8px; cursor:pointer; font-size:1rem;">
+            Cancelar
+        </button>
+        <button type="submit" style="flex:1; padding:0.75rem; background:#4A90E2; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
+            Enviar Solicitação
+        </button>
+    </div>
+</form>
