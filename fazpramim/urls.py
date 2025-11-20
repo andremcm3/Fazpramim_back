@@ -12,10 +12,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
     path('accounts/', include('accounts.urls')),   # HTML
-    path('api/', include('accounts.api.api_urls')),  # REST API (apenas isso)
+    path('api/accounts/', include('accounts.api.api_urls')),  # REST API (apenas isso)
     path('', include('fazpramim.app_urls')),
     path("pesquisar/", views.search_view, name="search"),
-]
+]   
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

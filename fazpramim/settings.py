@@ -138,7 +138,10 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Para aceitar POST/PUT/DELETE vindos de fora
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
-    "http://127.0.0.1",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1"
+    "http://localhost:8080",      # Adicionado para garantir
+    "http://127.0.0.1:8080",
     # Aqui depois colocamos o domínio do Lovable:
     # "https://xxxxx.lovable.app"
 ]

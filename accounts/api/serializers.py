@@ -1,10 +1,10 @@
+
 from rest_framework import serializers
-from accounts.models import ServiceRequest, ProviderProfile
+from accounts.models import ServiceRequest, ProviderProfile, ClientProfile # <-- ADICIONE ClientProfile
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError # Importação adicional para garantir usernames únicos
-
+from django.db import IntegrityError, transaction
 # =======================================================
 # 👤 SERIALIZERS DE USUÁRIO (Existentes e Renomeados)
 # =======================================================
@@ -31,14 +31,17 @@ class ProviderSummarySerializer(serializers.ModelSerializer):
 # =======================================================
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """Serializer para registro de novo usuário."""
-    # Garante que a senha seja write-only e não seja retornada na resposta
+    """Serializer base para registro de novo usuário."""
+    # Garante que a senha seja write-only
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    
+    # Este campo é mantido para consistência, mas não é estritamente necessário no base
+    profile_data = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'password2')
+        fields = ('id', 'username', 'email', 'password', 'password2', 'profile_data')
         extra_kwargs = {
             'username': {'required': True},
             'email': {'required': True},
@@ -49,16 +52,19 @@ class RegisterSerializer(serializers.ModelSerializer):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "As duas senhas devem ser iguais."})
         
-        # Validação: Email deve ser único (se o modelo User for customizado, verifique a implementação)
+        # Validação: Email deve ser único
         if User.objects.filter(email=data['email']).exists():
              raise serializers.ValidationError({"email": "Este email já está em uso."})
 
         return data
 
+    # Usamos @transaction.atomic para garantir que se o perfil falhar, o usuário não seja criado
+    @transaction.atomic 
     def create(self, validated_data):
-        validated_data.pop('password2') # Remove a confirmação antes de criar
+        validated_data.pop('password2') 
         
         try:
+            # Criação do Usuário Base
             user = User.objects.create_user(
                 username=validated_data['username'],
                 email=validated_data['email'],
@@ -66,10 +72,84 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
             return user
         except IntegrityError:
-            # Caso o username já exista (redundante, mas seguro)
             raise serializers.ValidationError({"username": "Este nome de usuário já está em uso."})
 
+# --------------------------------------------------------------------------------------
+# 🆕 SERIALIZER DE CLIENTE (Herda de RegisterSerializer)
+# --------------------------------------------------------------------------------------
 
+class ClientRegisterSerializer(RegisterSerializer):
+    """Serializer completo para registro de Cliente, incluindo ClientProfile."""
+    
+    # Adiciona campos do ClientProfile diretamente no corpo da requisição
+    full_name = serializers.CharField(max_length=255, required=True)
+    cpf = serializers.CharField(max_length=20, required=True)
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    identity_document = serializers.FileField(required=False, allow_null=True)
+
+    # Sobrescreve o campo fields para incluir os campos do perfil
+    class Meta(RegisterSerializer.Meta):
+        fields = RegisterSerializer.Meta.fields + ('full_name', 'cpf', 'phone', 'address', 'identity_document')
+
+    @transaction.atomic
+    def create(self, validated_data):
+        # 1. Cria o Usuário base (usando o create do pai)
+        user = super().create(validated_data) 
+
+        # 2. Cria o Perfil do Cliente
+        ClientProfile.objects.create(
+            user=user,
+            full_name=validated_data.get('full_name'),
+            cpf=validated_data.get('cpf'),
+            phone=validated_data.get('phone'),
+            address=validated_data.get('address'),
+            identity_document=validated_data.get('identity_document'),
+        )
+
+        return user
+
+
+# --------------------------------------------------------------------------------------
+# 🆕 SERIALIZER DE PRESTADOR (Herda de RegisterSerializer)
+# --------------------------------------------------------------------------------------
+
+class ProviderRegisterSerializer(RegisterSerializer):
+    """Serializer completo para registro de Prestador, incluindo ProviderProfile."""
+
+    # Adiciona campos do ProviderProfile diretamente no corpo da requisição
+    full_name = serializers.CharField(max_length=255, required=True)
+    professional_email = serializers.EmailField(required=True)
+    service_address = serializers.CharField(required=False, allow_blank=True)
+    technical_qualification = serializers.CharField(required=False, allow_blank=True)
+    identity_document = serializers.FileField(required=False, allow_null=True)
+    certifications = serializers.FileField(required=False, allow_null=True)
+
+    # Sobrescreve o campo fields para incluir os campos do perfil
+    class Meta(RegisterSerializer.Meta):
+        fields = RegisterSerializer.Meta.fields + (
+            'full_name', 'professional_email', 'service_address', 
+            'technical_qualification', 'identity_document', 'certifications'
+        )
+
+    @transaction.atomic
+    def create(self, validated_data):
+        # 1. Cria o Usuário base
+        user = super().create(validated_data)
+
+        # 2. Cria o Perfil do Prestador
+        ProviderProfile.objects.create(
+            user=user,
+            full_name=validated_data.get('full_name'),
+            professional_email=validated_data.get('professional_email'),
+            service_address=validated_data.get('service_address'),
+            technical_qualification=validated_data.get('technical_qualification'),
+            identity_document=validated_data.get('identity_document'),
+            certifications=validated_data.get('certifications'),
+        )
+
+        return user
+        
 class LoginSerializer(serializers.Serializer):
     """Serializer para validar credenciais de login."""
     username = serializers.CharField()

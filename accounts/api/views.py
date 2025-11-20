@@ -13,7 +13,8 @@ from .serializers import (
     ServiceRequestSerializer, 
     ServiceRequestDetailSerializer,
     # Necessários para Autenticação
-    RegisterSerializer, 
+    ClientRegisterSerializer,
+    ProviderRegisterSerializer,
     UserSerializer,     
     LoginSerializer     
 )
@@ -21,21 +22,6 @@ from .serializers import (
 # =======================================================
 # 🔐 VIEWS DE AUTENTICAÇÃO
 # =======================================================
-
-class RegisterApi(generics.GenericAPIView):
-    """View para registro de novos usuários. Retorna o token de autenticação."""
-    serializer_class = RegisterSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        
-        return Response({
-            "user": UserSerializer(user, context=self.get_serializer_context()).data,
-            # Gera um novo token para o usuário registrado
-            "token": AuthToken.objects.create(user)[1] 
-        }, status=status.HTTP_201_CREATED)
 
 
 class LoginApi(KnoxLoginView):
@@ -60,6 +46,63 @@ class LogoutApi(LogoutView):
     """Faz o logout do usuário, invalidando o token atual."""
     # Herda diretamente do Knox, não requer código adicional.
     pass
+
+
+
+# accounts/api/views.py
+
+# ... (código existente para LoginApi, LogoutApi) ...
+
+# ----------------------------------------------------------------------
+# 🆕 VIEW PARA CADASTRO DE CLIENTE
+# ----------------------------------------------------------------------
+
+class ClientRegisterAPIView(generics.GenericAPIView):
+    """View para registro de novos Clientes. Usa ClientRegisterSerializer."""
+    serializer_class = ClientRegisterSerializer
+    # Permite acesso público ao registro
+    permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # O serializer.save() cria o User E o ClientProfile
+        user = serializer.save()
+        
+        # Gerar e retornar o Token Knox e os dados do usuário
+        return Response({
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "token": AuthToken.objects.create(user)[1] 
+        }, status=status.HTTP_201_CREATED)
+
+
+# ----------------------------------------------------------------------
+# 🆕 VIEW PARA CADASTRO DE PRESTADOR (Com manipulação de File Upload)
+# ----------------------------------------------------------------------
+
+class ProviderRegisterAPIView(generics.GenericAPIView):
+    """View para registro de novos Prestadores. Usa ProviderRegisterSerializer."""
+    serializer_class = ProviderRegisterSerializer
+    permission_classes = (permissions.AllowAny,)
+    
+    # IMPORTANTE: generics.GenericAPIView, por padrão, lida bem com 
+    # multipart/form-data (arquivos) e application/json, desde que o Serializer 
+    # esteja correto (como o nosso ProviderRegisterSerializer está).
+
+    def post(self, request, *args, **kwargs):
+        # request.data lida com JSON e arquivos (multipart/form-data)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # O serializer.save() cria o User E o ProviderProfile
+        user = serializer.save()
+        
+        # Gerar e retornar o Token Knox e os dados do usuário
+        return Response({
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "token": AuthToken.objects.create(user)[1] 
+        }, status=status.HTTP_201_CREATED)
 
 
 # =======================================================
