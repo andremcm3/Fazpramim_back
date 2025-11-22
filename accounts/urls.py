@@ -21,6 +21,8 @@ urlpatterns = [
     path('meu-perfil/', views.my_profile, name='my_profile'),
     # Perfil público de prestador (visualização por qualquer usuário)
     path('prestador/<int:pk>/', views.provider_detail, name='provider_detail'),
+    # Perfil público de cliente (visualização por qualquer usuário)
+    path('cliente/<str:username>/', views.client_detail, name='client_detail'),
     # Criar solicitação ao prestador
     path('prestador/<int:pk>/solicitar/', views.create_request, name='create_request'),
     # Área do prestador: ver solicitações recebidas
@@ -31,6 +33,10 @@ urlpatterns = [
     path('solicitacao/<int:pk>/', views.request_detail, name='request_detail'),
     # Chat para solicitação aceita
     path('solicitacao/<int:pk>/chat/', views.chat_view, name='chat_view'),
+    # Marcar serviço como concluído
+    path('solicitacao/<int:pk>/concluir/', views.complete_service, name='complete_service'),
+    # Avaliar serviço concluído
+    path('solicitacao/<int:pk>/avaliar/', views.review_service, name='review_service'),
     # API REST para solicitações (DRF)
     path('api/providers/<int:pk>/requests/', views.CreateServiceRequestAPIView.as_view(), name='api_create_request'),
     path('api/provider/requests/', views.ProviderRequestsListAPIView.as_view(), name='api_provider_requests'),

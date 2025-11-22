@@ -51,11 +51,13 @@ class ServiceRequest(models.Model):
     STATUS_PENDING = 'pending'
     STATUS_ACCEPTED = 'accepted'
     STATUS_REJECTED = 'rejected'
+    STATUS_COMPLETED = 'completed'
 
     STATUS_CHOICES = [
         (STATUS_PENDING, 'Pendente'),
         (STATUS_ACCEPTED, 'Aceito'),
         (STATUS_REJECTED, 'Rejeitado'),
+        (STATUS_COMPLETED, 'Concluído'),
     ]
 
     provider = models.ForeignKey(
@@ -68,6 +70,8 @@ class ServiceRequest(models.Model):
     desired_datetime = models.DateTimeField(blank=True, null=True)
     proposed_value = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    completed_by_client = models.BooleanField(default=False)
+    completed_by_provider = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -91,3 +95,32 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"ChatMessage(request={self.service_request.id}, sender={self.sender.username}, at={self.created_at})"
+
+
+class Review(models.Model):
+    service_request = models.OneToOneField(
+        ServiceRequest, on_delete=models.CASCADE, related_name='review'
+    )
+    # Avaliação do cliente sobre o prestador
+    client_rating = models.IntegerField(null=True, blank=True, help_text="Avaliação do cliente (0-5 estrelas)")
+    client_comment = models.TextField(blank=True, help_text="Comentário do cliente")
+    client_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Avaliação do prestador sobre o cliente
+    provider_rating = models.IntegerField(null=True, blank=True, help_text="Avaliação do prestador (0-5 estrelas)")
+    provider_comment = models.TextField(blank=True, help_text="Comentário do prestador")
+    provider_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Review(request={self.service_request.id})"
+    
+    @property
+    def client_has_reviewed(self):
+        return self.client_rating is not None
+    
+    @property
+    def provider_has_reviewed(self):
+        return self.provider_rating is not None
