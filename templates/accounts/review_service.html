@@ -25,10 +25,15 @@
                     {% if review.client_comment %}
                         <p style="margin:1rem 0 0 0; color:#155724; font-style:italic;">"{{ review.client_comment }}"</p>
                     {% endif %}
+                    {% if review.client_photo %}
+                        <div style="margin-top:1rem;">
+                            <img src="{{ review.client_photo.url }}" alt="Foto do trabalho" style="max-width:300px; border-radius:8px; border:2px solid #28A745;">
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         {% else %}
-            <form method="post" style="display:flex; flex-direction:column; gap:1.5rem;">
+            <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:1.5rem;">
                 {% csrf_token %}
                 
                 <div>
@@ -55,6 +60,12 @@
                     <textarea name="comment" id="comment" placeholder="Conte como foi sua experiência..." style="width:100%; padding:0.75rem; border:1px solid #ddd; border-radius:8px; resize:vertical; min-height:120px; font-family:inherit;"></textarea>
                 </div>
 
+                <div>
+                    <label for="photo" style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Foto do Trabalho Realizado (opcional):</label>
+                    <input type="file" name="photo" id="photo" accept="image/*" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:8px;">
+                    <p style="margin:0.5rem 0 0 0; font-size:0.85rem; color:#666;">Esta foto será exibida no portfólio do prestador</p>
+                </div>
+
                 <button type="submit" style="padding:1rem; background:#4A90E2; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
                     Enviar Avaliação
                 </button>
@@ -77,7 +88,7 @@
                 </div>
             </div>
         {% else %}
-            <form method="post" style="display:flex; flex-direction:column; gap:1.5rem;">
+            <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:1.5rem;">
                 {% csrf_token %}
                 
                 <div>

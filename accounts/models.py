@@ -12,6 +12,12 @@ class ClientProfile(models.Model):
     cpf = models.CharField(max_length=20)
     phone = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)
+    profile_photo = models.ImageField(
+        upload_to="profile_photos/clients/",
+        blank=True,
+        null=True,
+        help_text="Foto de perfil"
+    )
     identity_document = models.FileField(
         upload_to="documents/clients/",
         blank=True,
@@ -32,6 +38,12 @@ class ProviderProfile(models.Model):
     professional_email = models.EmailField()
     service_address = models.TextField(blank=True)
     technical_qualification = models.TextField(blank=True)
+    profile_photo = models.ImageField(
+        upload_to="profile_photos/providers/",
+        blank=True,
+        null=True,
+        help_text="Foto de perfil"
+    )
     identity_document = models.FileField(
         upload_to="documents/providers/identity/",
         blank=True,
@@ -45,6 +57,27 @@ class ProviderProfile(models.Model):
 
     def __str__(self):
         return f"ProviderProfile({self.user.username})"
+
+
+class PortfolioPhoto(models.Model):
+    provider = models.ForeignKey(
+        ProviderProfile,
+        on_delete=models.CASCADE,
+        related_name='portfolio_photos'
+    )
+    photo = models.ImageField(
+        upload_to="portfolio/",
+        help_text="Foto do portfólio"
+    )
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Portfolio({self.provider.full_name} - {self.created_at.date()})"
 
 
 class ServiceRequest(models.Model):
@@ -104,6 +137,12 @@ class Review(models.Model):
     # Avaliação do cliente sobre o prestador
     client_rating = models.IntegerField(null=True, blank=True, help_text="Avaliação do cliente (0-5 estrelas)")
     client_comment = models.TextField(blank=True, help_text="Comentário do cliente")
+    client_photo = models.ImageField(
+        upload_to="review_photos/",
+        blank=True,
+        null=True,
+        help_text="Foto do trabalho realizado"
+    )
     client_reviewed_at = models.DateTimeField(null=True, blank=True)
     
     # Avaliação do prestador sobre o cliente

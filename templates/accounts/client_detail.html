@@ -5,7 +5,21 @@
     <p><a href="{% url 'home' %}">&larr; Voltar</a></p>
 
     <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd; margin-bottom:2rem;">
-        <h1 style="margin:0 0 1rem 0;">Perfil do Cliente: {{ client.username }}</h1>
+        <div style="display:flex; align-items:start; gap:2rem; margin-bottom:1.5rem;">
+            {% if client_profile.profile_photo %}
+            <img src="{{ client_profile.profile_photo.url }}" alt="{{ client.username }}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:3px solid #4A90E2;">
+            {% else %}
+            <div style="width:150px; height:150px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:3rem; color:#999; border:3px solid #4A90E2;">
+                👤
+            </div>
+            {% endif %}
+            <div style="flex:1;">
+                <h1 style="margin:0 0 0.5rem 0;">{{ client.username }}</h1>
+                {% if client_profile.full_name %}
+                <p style="margin:0; color:#666; font-size:1rem;">{{ client_profile.full_name }}</p>
+                {% endif %}
+            </div>
+        </div>
 
         <!-- Média de Avaliações -->
         {% if avg_rating %}

@@ -116,7 +116,7 @@ def my_profile(request):
 
 def provider_detail(request, pk):
     """Página pública com os detalhes de um prestador de serviço."""
-    from .models import Review
+    from .models import Review, PortfolioPhoto
     
     provider = get_object_or_404(ProviderProfile, pk=pk)
     
@@ -125,6 +125,9 @@ def provider_detail(request, pk):
         service_request__provider=provider,
         client_rating__isnull=False
     ).select_related('service_request', 'service_request__client').order_by('-client_reviewed_at')
+    
+    # Buscar fotos do portfólio do prestador
+    portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
     
     # Calcular média de avaliações
     total_reviews = reviews.count()
@@ -136,6 +139,7 @@ def provider_detail(request, pk):
     context = {
         "provider": provider,
         "reviews": reviews,
+        "portfolio_photos": portfolio_photos,
         "total_reviews": total_reviews,
         "avg_rating": avg_rating,
     }
@@ -365,6 +369,58 @@ def complete_service(request, pk):
 
 
 @login_required
+def manage_portfolio(request):
+    """Permite ao prestador gerenciar as fotos do seu portfólio."""
+    from .models import PortfolioPhoto
+    
+    # Verificar se é prestador
+    if not hasattr(request.user, 'provider_profile'):
+        messages.error(request, 'Apenas prestadores podem gerenciar portfólio.')
+        return redirect('my_profile')
+    
+    provider = request.user.provider_profile
+    
+    # Adicionar foto
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            photo = request.FILES.get('photo')
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            
+            if photo:
+                PortfolioPhoto.objects.create(
+                    provider=provider,
+                    photo=photo,
+                    title=title,
+                    description=description
+                )
+                messages.success(request, 'Foto adicionada ao portfólio com sucesso!')
+            else:
+                messages.error(request, 'Por favor, selecione uma foto.')
+        
+        elif action == 'delete':
+            photo_id = request.POST.get('photo_id')
+            try:
+                photo = PortfolioPhoto.objects.get(id=photo_id, provider=provider)
+                photo.delete()
+                messages.success(request, 'Foto removida do portfólio.')
+            except PortfolioPhoto.DoesNotExist:
+                messages.error(request, 'Foto não encontrada.')
+        
+        return redirect('manage_portfolio')
+    
+    # Listar fotos do portfólio
+    portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
+    
+    context = {
+        'portfolio_photos': portfolio_photos,
+    }
+    return render(request, 'accounts/manage_portfolio.html', context)
+
+
+@login_required
 def review_service(request, pk):
     """Permite ao cliente ou prestador avaliar o serviço após conclusão."""
     from .models import Review
@@ -391,6 +447,7 @@ def review_service(request, pk):
     if request.method == 'POST':
         rating = request.POST.get('rating')
         comment = request.POST.get('comment', '').strip()
+        photo = request.FILES.get('photo')
 
         # Validar rating
         try:
@@ -409,6 +466,8 @@ def review_service(request, pk):
             else:
                 review.client_rating = rating
                 review.client_comment = comment
+                if photo:
+                    review.client_photo = photo
                 review.client_reviewed_at = timezone.now()
                 review.save()
                 messages.success(request, 'Sua avaliação foi registrada com sucesso!')

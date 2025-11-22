@@ -37,6 +37,8 @@ urlpatterns = [
     path('solicitacao/<int:pk>/concluir/', views.complete_service, name='complete_service'),
     # Avaliar serviço concluído
     path('solicitacao/<int:pk>/avaliar/', views.review_service, name='review_service'),
+    # Gerenciar portfólio (prestador)
+    path('portfolio/', views.manage_portfolio, name='manage_portfolio'),
     # API REST para solicitações (DRF)
     path('api/providers/<int:pk>/requests/', views.CreateServiceRequestAPIView.as_view(), name='api_create_request'),
     path('api/provider/requests/', views.ProviderRequestsListAPIView.as_view(), name='api_provider_requests'),

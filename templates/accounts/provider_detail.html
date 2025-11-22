@@ -5,7 +5,21 @@
     <p><a href="{% url 'search' %}">&larr; Voltar à busca</a></p>
 
     <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd; margin-bottom:2rem;">
-        <h1 style="margin:0 0 1rem 0;">{{ provider.full_name }}</h1>
+        <div style="display:flex; align-items:start; gap:2rem; margin-bottom:1.5rem;">
+            {% if provider.profile_photo %}
+            <img src="{{ provider.profile_photo.url }}" alt="{{ provider.full_name }}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:3px solid #4A90E2;">
+            {% else %}
+            <div style="width:150px; height:150px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:3rem; color:#999; border:3px solid #4A90E2;">
+                👤
+            </div>
+            {% endif %}
+            <div style="flex:1;">
+                <h1 style="margin:0 0 0.5rem 0;">{{ provider.full_name }}</h1>
+                {% if provider.technical_qualification %}
+                <p style="margin:0; color:#666; font-size:1rem;">{{ provider.technical_qualification|truncatewords:15 }}</p>
+                {% endif %}
+            </div>
+        </div>
 
         <!-- Média de Avaliações -->
         {% if avg_rating %}
@@ -46,6 +60,30 @@
         {% endif %}
     </div>
 
+    <!-- Seção de Portfólio -->
+    {% if portfolio_photos %}
+    <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd; margin-bottom:2rem;">
+        <h2 style="margin:0 0 1.5rem 0; color:#333; border-bottom:2px solid #4A90E2; padding-bottom:0.5rem;">Portfólio de Trabalhos</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:1.5rem;">
+            {% for photo in portfolio_photos %}
+                <div style="border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); position:relative;">
+                    <img src="{{ photo.photo.url }}" alt="{{ photo.title }}" style="width:100%; height:250px; object-fit:cover;">
+                    {% if photo.title or photo.description %}
+                    <div style="padding:1rem; background:#f9f9f9;">
+                        {% if photo.title %}
+                        <h3 style="margin:0 0 0.5rem 0; font-size:1rem; font-weight:600;">{{ photo.title }}</h3>
+                        {% endif %}
+                        {% if photo.description %}
+                        <p style="margin:0; font-size:0.9rem; color:#666;">{{ photo.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Seção de Avaliações -->
     {% if reviews %}
     <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd;">
@@ -71,6 +109,11 @@
                 </div>
                 {% if review.client_comment %}
                 <p style="margin:0.75rem 0 0 0; color:#555; font-style:italic;">"{{ review.client_comment }}"</p>
+                {% endif %}
+                {% if review.client_photo %}
+                <div style="margin-top:1rem;">
+                    <img src="{{ review.client_photo.url }}" alt="Foto do trabalho" style="width:100%; max-width:400px; border-radius:8px; border:2px solid #ddd;">
+                </div>
                 {% endif %}
                 <p style="margin:0.5rem 0 0 0; font-size:0.85rem; color:#999;">Serviço #{{ review.service_request.id }}</p>
             </div>
