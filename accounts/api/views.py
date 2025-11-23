@@ -8,21 +8,13 @@ from knox.views import LoginView as KnoxLoginView, LogoutView
 from knox.models import AuthToken
 from django.utils import timezone
 
-# Models
 from accounts.models import ProviderProfile, ServiceRequest, ChatMessage, Review, PortfolioPhoto
-
-# Serializers
 from .serializers import (
-    ServiceRequestSerializer, 
-    ServiceRequestDetailSerializer,
-    ClientRegisterSerializer,
-    ProviderRegisterSerializer,
-    UserSerializer,     
-    LoginSerializer,
-    ProviderListSerializer, # Busca
-    ChatMessageSerializer,  # Chat
-    ReviewSerializer,       # Avaliação
-    PortfolioPhotoSerializer # Portfolio
+    ServiceRequestSerializer, ServiceRequestDetailSerializer,
+    ClientRegisterSerializer, ProviderRegisterSerializer,
+    UserSerializer, LoginSerializer,
+    ProviderListSerializer, ProviderDetailSerializer, # <--- NOVO
+    ChatMessageSerializer, ReviewSerializer, PortfolioPhotoSerializer
 )
 
 # =======================================================
@@ -85,6 +77,12 @@ class ProviderListAPIView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['full_name', 'technical_qualification', 'service_address']
 
+
+class ProviderRetrieveAPIView(generics.RetrieveAPIView):
+    """Detalhes públicos do prestador (Portfolio, Reviews, etc)."""
+    permission_classes = [permissions.AllowAny]
+    serializer_class = ProviderDetailSerializer
+    queryset = ProviderProfile.objects.all()
 # =======================================================
 # 🛠️ SOLICITAÇÕES DE SERVIÇO
 # =======================================================
