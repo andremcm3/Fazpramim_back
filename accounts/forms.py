@@ -29,6 +29,7 @@ class ClientSignUpForm(UserCreationForm):
     cpf = forms.CharField(max_length=20)
     phone = forms.CharField(max_length=30, required=False)
     address = forms.CharField(widget=forms.Textarea, required=False)
+    profile_photo = forms.ImageField(required=False)
     identity_document = forms.FileField(required=False)
 
     class Meta:
@@ -42,6 +43,7 @@ class ClientSignUpForm(UserCreationForm):
             "cpf",
             "phone",
             "address",
+            "profile_photo",
             "identity_document",
         )
 
@@ -59,6 +61,7 @@ class ClientSignUpForm(UserCreationForm):
             cpf=self.cleaned_data.get("cpf"),
             phone=self.cleaned_data.get("phone"),
             address=self.cleaned_data.get("address"),
+            profile_photo=self.cleaned_data.get("profile_photo"),
             identity_document=self.cleaned_data.get("identity_document"),
         )
         return user
@@ -74,6 +77,7 @@ class ProviderSignUpForm(UserCreationForm):
         widget=forms.Textarea,
         required=False,
     )
+    profile_photo = forms.ImageField(required=False)
     identity_document = forms.FileField(required=False)
     certifications = forms.FileField(required=False)
 
@@ -88,6 +92,7 @@ class ProviderSignUpForm(UserCreationForm):
             "professional_email",
             "service_address",
             "technical_qualification",
+            "profile_photo",
             "identity_document",
             "certifications",
         )
@@ -106,6 +111,7 @@ class ProviderSignUpForm(UserCreationForm):
             professional_email=self.cleaned_data.get("professional_email"),
             service_address=self.cleaned_data.get("service_address"),
             technical_qualification=self.cleaned_data.get("technical_qualification"),
+            profile_photo=self.cleaned_data.get("profile_photo"),
             identity_document=self.cleaned_data.get("identity_document"),
             certifications=self.cleaned_data.get("certifications"),
         )
@@ -116,7 +122,7 @@ class ProviderSignUpForm(UserCreationForm):
 class ClientProfileForm(forms.ModelForm):
     class Meta:
         model = ClientProfile
-        fields = ["full_name", "cpf", "phone", "address", "identity_document"]
+        fields = ["full_name", "cpf", "phone", "address", "profile_photo", "identity_document"]
 
 
 class ProviderProfileForm(forms.ModelForm):
@@ -127,6 +133,7 @@ class ProviderProfileForm(forms.ModelForm):
             "professional_email",
             "service_address",
             "technical_qualification",
+            "profile_photo",
             "identity_document",
             "certifications",
         ]

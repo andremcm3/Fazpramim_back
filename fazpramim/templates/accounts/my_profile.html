@@ -29,6 +29,11 @@
         <h2>Minhas Solicitações de Serviço</h2>
         <p><a href="{% url 'provider_requests' %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px;">Ver Solicitações Recebidas</a></p>
     </div>
+    
+    <div style="margin-bottom:2rem;">
+        <h2>Meu Portfólio</h2>
+        <p><a href="{% url 'manage_portfolio' %}" style="padding:0.5rem 1rem; background:#28a745; color:white; text-decoration:none; border-radius:6px;">Gerenciar Portfólio</a></p>
+    </div>
     {% endif %}
 
     {% if is_client %}

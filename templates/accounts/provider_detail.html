@@ -1,29 +1,127 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>{{ provider.full_name }}</h1>
+<div style="max-width:900px; margin:2rem auto;">
+    <p><a href="{% url 'search' %}">&larr; Voltar à busca</a></p>
 
-{% if provider.professional_email %}
-<p><strong>Email:</strong> {{ provider.professional_email }}</p>
-{% endif %}
+    <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd; margin-bottom:2rem;">
+        <div style="display:flex; align-items:start; gap:2rem; margin-bottom:1.5rem;">
+            {% if provider.profile_photo %}
+            <img src="{{ provider.profile_photo.url }}" alt="{{ provider.full_name }}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:3px solid #4A90E2;">
+            {% else %}
+            <div style="width:150px; height:150px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:3rem; color:#999; border:3px solid #4A90E2;">
+                👤
+            </div>
+            {% endif %}
+            <div style="flex:1;">
+                <h1 style="margin:0 0 0.5rem 0;">{{ provider.full_name }}</h1>
+                {% if provider.technical_qualification %}
+                <p style="margin:0; color:#666; font-size:1rem;">{{ provider.technical_qualification|truncatewords:15 }}</p>
+                {% endif %}
+            </div>
+        </div>
 
-{% if provider.technical_qualification %}
-<p><strong>Área/Qualificação:</strong><br>{{ provider.technical_qualification|linebreaks }}</p>
-{% endif %}
+        <!-- Média de Avaliações -->
+        {% if avg_rating %}
+        <div style="padding:1rem; background:#FFF9E6; border:2px solid #FFC107; border-radius:8px; margin-bottom:1.5rem; text-align:center;">
+            <div style="font-size:2.5rem; color:#FFC107; margin-bottom:0.5rem;">
+                {% widthratio avg_rating 1 1 as stars_int %}
+                {% for i in "12345" %}
+                    {% if forloop.counter <= stars_int %}★{% else %}☆{% endif %}
+                {% endfor %}
+            </div>
+            <p style="margin:0; font-size:1.2rem; font-weight:600; color:#333;">{{ avg_rating|floatformat:1 }} estrelas</p>
+            <p style="margin:0.25rem 0 0 0; color:#666;">Baseado em {{ total_reviews }} avaliação{{ total_reviews|pluralize:"ões" }}</p>
+        </div>
+        {% else %}
+        <div style="padding:1rem; background:#f0f0f0; border-radius:8px; margin-bottom:1.5rem; text-align:center;">
+            <p style="margin:0; color:#666;">Ainda não há avaliações para este prestador</p>
+        </div>
+        {% endif %}
 
-{% if provider.service_address %}
-<p><strong>Atende em:</strong><br>{{ provider.service_address|linebreaks }}</p>
-{% endif %}
+        {% if provider.professional_email %}
+        <p style="margin:0.75rem 0;"><strong>Email:</strong> {{ provider.professional_email }}</p>
+        {% endif %}
 
-{% if provider.identity_document %}
-<p><a href="{{ provider.identity_document.url }}" target="_blank">Ver documento de identidade</a></p>
-{% endif %}
+        {% if provider.technical_qualification %}
+        <p style="margin:0.75rem 0;"><strong>Área/Qualificação:</strong><br>{{ provider.technical_qualification|linebreaks }}</p>
+        {% endif %}
 
-{% if provider.certifications %}
-<p><a href="{{ provider.certifications.url }}" target="_blank">Ver certificações</a></p>
-{% endif %}
+        {% if provider.service_address %}
+        <p style="margin:0.75rem 0;"><strong>Atende em:</strong><br>{{ provider.service_address|linebreaks }}</p>
+        {% endif %}
 
-<p><a href="{% url 'search' %}">Voltar à busca</a></p>
+        {% if provider.identity_document %}
+        <p style="margin:0.75rem 0;"><a href="{{ provider.identity_document.url }}" target="_blank">Ver documento de identidade</a></p>
+        {% endif %}
+
+        {% if provider.certifications %}
+        <p style="margin:0.75rem 0;"><a href="{{ provider.certifications.url }}" target="_blank">Ver certificações</a></p>
+        {% endif %}
+    </div>
+
+    <!-- Seção de Portfólio -->
+    {% if portfolio_photos %}
+    <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd; margin-bottom:2rem;">
+        <h2 style="margin:0 0 1.5rem 0; color:#333; border-bottom:2px solid #4A90E2; padding-bottom:0.5rem;">Portfólio de Trabalhos</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:1.5rem;">
+            {% for photo in portfolio_photos %}
+                <div style="border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); position:relative;">
+                    <img src="{{ photo.photo.url }}" alt="{{ photo.title }}" style="width:100%; height:250px; object-fit:cover;">
+                    {% if photo.title or photo.description %}
+                    <div style="padding:1rem; background:#f9f9f9;">
+                        {% if photo.title %}
+                        <h3 style="margin:0 0 0.5rem 0; font-size:1rem; font-weight:600;">{{ photo.title }}</h3>
+                        {% endif %}
+                        {% if photo.description %}
+                        <p style="margin:0; font-size:0.9rem; color:#666;">{{ photo.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Seção de Avaliações -->
+    {% if reviews %}
+    <div style="background:#fff; padding:2rem; border-radius:12px; border:1px solid #ddd;">
+        <h2 style="margin:0 0 1.5rem 0; color:#333; border-bottom:2px solid #FFC107; padding-bottom:0.5rem;">Avaliações de Clientes</h2>
+        
+        <div style="display:flex; flex-direction:column; gap:1.5rem;">
+            {% for review in reviews %}
+            <div style="padding:1.5rem; background:#f9f9f9; border-radius:8px; border-left:4px solid #FFC107;">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.75rem;">
+                    <div>
+                        <p style="margin:0; font-weight:600; color:#333;">
+                            <a href="{% url 'client_detail' review.service_request.client.username %}" style="color:#4A90E2; text-decoration:none;">
+                                {{ review.service_request.client.username }}
+                            </a>
+                        </p>
+                        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:#666;">{{ review.client_reviewed_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div style="font-size:1.5rem; color:#FFC107;">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.client_rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if review.client_comment %}
+                <p style="margin:0.75rem 0 0 0; color:#555; font-style:italic;">"{{ review.client_comment }}"</p>
+                {% endif %}
+                {% if review.client_photo %}
+                <div style="margin-top:1rem;">
+                    <img src="{{ review.client_photo.url }}" alt="Foto do trabalho" style="width:100%; max-width:400px; border-radius:8px; border:2px solid #ddd;">
+                </div>
+                {% endif %}
+                <p style="margin:0.5rem 0 0 0; font-size:0.85rem; color:#999;">Serviço #{{ review.service_request.id }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
 
 {# Button + modal to create a ServiceRequest (AJAX) #}
 {% if user.is_authenticated %}
