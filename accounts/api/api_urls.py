@@ -38,4 +38,5 @@ urlpatterns = [
     path("requests/<int:pk>/chat/", views.ChatAPIView.as_view(), name="api_chat"),
     path("requests/<int:pk>/complete/", views.CompleteServiceAPIView.as_view(), name="api_complete_service"),
     path("requests/<int:pk>/review/", views.ReviewCreateAPIView.as_view(), name="api_review_service"),
+    path('provider/reviews/', views.ProviderReviewsListAPIView.as_view(), name='provider-reviews'),
 ]

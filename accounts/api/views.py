@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from accounts.models import ProviderProfile, ServiceRequest, ChatMessage, Review, PortfolioPhoto
 from .serializers import (
-    ServiceRequestSerializer, ServiceRequestDetailSerializer,
+    ReviewPublicSerializer, ServiceRequestSerializer, ServiceRequestDetailSerializer,
     ClientRegisterSerializer, ProviderRegisterSerializer,
     UserSerializer, LoginSerializer,
     ProviderListSerializer, ProviderDetailSerializer, # <--- NOVO
@@ -31,7 +31,11 @@ class LoginApi(KnoxLoginView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         login(request, user)
-        return super(LoginApi, self).post(request, format=None)
+        
+        response = super(LoginApi, self).post(request, format=None)
+        response.data['user'] = UserSerializer(user).data
+        
+        return response
 
 class LogoutApi(LogoutView):
     """Logout e invalidação de Token."""
@@ -108,7 +112,15 @@ class ProviderRequestsListAPIView(generics.ListAPIView):
         user = self.request.user
         if not hasattr(user, 'provider_profile'):
             return ServiceRequest.objects.none()
-        return ServiceRequest.objects.filter(provider=user.provider_profile).order_by('-created_at')
+        
+        queryset = ServiceRequest.objects.filter(provider=user.provider_profile).order_by('-created_at')
+        
+        # Filtro opcional por status
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset
 
 class ServiceRequestDetailAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -236,3 +248,16 @@ class ReviewCreateAPIView(APIView):
             return Response({"message": "Avaliação enviada!"}, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProviderReviewsListAPIView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ReviewPublicSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not hasattr(user, 'provider_profile'):
+            return Review.objects.none()
+        return Review.objects.filter(
+            service_request__provider=user.provider_profile,
+            client_rating__isnull=False
+        ).order_by('-client_reviewed_at')

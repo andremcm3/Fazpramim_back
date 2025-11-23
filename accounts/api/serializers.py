@@ -10,9 +10,22 @@ from django.db.models import Avg
 # =======================================================
 
 class UserSerializer(serializers.ModelSerializer):
+    is_provider = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ("id", "username", "email")
+        fields = ("id", "username", "email", "is_provider", "full_name")
+    
+    def get_is_provider(self, obj):
+        return hasattr(obj, 'provider_profile')
+    
+    def get_full_name(self, obj):
+        if hasattr(obj, 'provider_profile'):
+            return obj.provider_profile.full_name
+        elif hasattr(obj, 'client_profile'):
+            return obj.client_profile.full_name
+        return obj.username
 
 UserSummarySerializer = UserSerializer
 
