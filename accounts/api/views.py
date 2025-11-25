@@ -8,12 +8,13 @@ from knox.views import LoginView as KnoxLoginView, LogoutView
 from knox.models import AuthToken
 from django.utils import timezone
 
-from accounts.models import ProviderProfile, ServiceRequest, ChatMessage, Review, PortfolioPhoto
+from accounts.models import ProviderProfile, ClientProfile, ServiceRequest, ChatMessage, Review, PortfolioPhoto
 from .serializers import (
     ReviewPublicSerializer, ServiceRequestSerializer, ServiceRequestDetailSerializer,
     ClientRegisterSerializer, ProviderRegisterSerializer,
     UserSerializer, LoginSerializer,
     ProviderListSerializer, ProviderDetailSerializer, # <--- NOVO
+    ClientProfileSerializer,
     ChatMessageSerializer, ReviewSerializer, PortfolioPhotoSerializer
 )
 
@@ -87,6 +88,28 @@ class ProviderRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ProviderDetailSerializer
     queryset = ProviderProfile.objects.all()
+
+class ClientRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """Recupera e atualiza o perfil do cliente autenticado."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ClientProfileSerializer
+    
+    def get_object(self):
+        """Retorna o ClientProfile do usuário autenticado."""
+        try:
+            return self.request.user.client_profile
+        except ClientProfile.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Cliente não encontrado.")
+    
+    def update(self, request, *args, **kwargs):
+        """Permite atualizar phone, address e profile_photo do cliente."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 # =======================================================
 # 🛠️ SOLICITAÇÕES DE SERVIÇO
 # =======================================================

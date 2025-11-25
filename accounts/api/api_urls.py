@@ -19,6 +19,10 @@ urlpatterns = [
     # 🆕 Detalhes de um prestador específico (Para a página PrestadorDetails)
     # Ex: GET /api/accounts/providers/5/
     path("providers/<int:pk>/", views.ProviderRetrieveAPIView.as_view(), name="api_provider_detail"),
+    
+    # 🆕 Perfil do Cliente (Autenticado)
+    # Ex: GET/PATCH /api/accounts/clients/14/
+    path("clients/<int:pk>/", views.ClientRetrieveUpdateAPIView.as_view(), name="api_client_detail"),
 
     # ======================
     # 🛠️ Solicitações de Serviço

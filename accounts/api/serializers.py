@@ -29,11 +29,26 @@ class UserSerializer(serializers.ModelSerializer):
 
 UserSummarySerializer = UserSerializer
 
+class UserSummarySerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = ProviderProfile
+        fields = ("id", "full_name", "user")
+
 class ProviderSummarySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = ProviderProfile
         fields = ("id", "full_name", "user")
+
+class ClientProfileSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source='user.username')
+    email = serializers.ReadOnlyField(source='user.email')
+    
+    class Meta:
+        model = ClientProfile
+        fields = ['id', 'full_name', 'username', 'email', 'cpf', 'phone', 'address', 'profile_photo', 'identity_document']
+        read_only_fields = ['id', 'username', 'email', 'cpf']
 
 # =======================================================
 # 🔍 SERIALIZERS PARA BUSCA E DETALHES (ATUALIZADO)
