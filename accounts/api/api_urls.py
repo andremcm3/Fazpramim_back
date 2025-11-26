@@ -20,6 +20,10 @@ urlpatterns = [
     # Ex: GET /api/accounts/providers/5/
     path("providers/<int:pk>/", views.ProviderRetrieveAPIView.as_view(), name="api_provider_detail"),
     
+    # 🆕 Atualizar perfil do Prestador (Autenticado)
+    # Ex: GET/PATCH /api/accounts/providers-edit/
+    path("providers-edit/", views.ProviderRetrieveUpdateAPIView.as_view(), name="api_provider_update"),
+    
     # 🆕 Perfil do Cliente (Autenticado)
     # Ex: GET/PATCH /api/accounts/clients/14/
     path("clients/<int:pk>/", views.ClientRetrieveUpdateAPIView.as_view(), name="api_client_detail"),

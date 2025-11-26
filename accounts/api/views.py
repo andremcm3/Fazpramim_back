@@ -13,7 +13,8 @@ from .serializers import (
     ReviewPublicSerializer, ServiceRequestSerializer, ServiceRequestDetailSerializer,
     ClientRegisterSerializer, ProviderRegisterSerializer,
     UserSerializer, LoginSerializer,
-    ProviderListSerializer, ProviderDetailSerializer, # <--- NOVO
+    ProviderListSerializer, ProviderDetailSerializer,
+    ProviderProfileUpdateSerializer,
     ClientProfileSerializer,
     ChatMessageSerializer, ReviewSerializer, PortfolioPhotoSerializer
 )
@@ -35,6 +36,10 @@ class LoginApi(KnoxLoginView):
         
         response = super(LoginApi, self).post(request, format=None)
         response.data['user'] = UserSerializer(user).data
+        
+        # Adiciona dados do provider_profile no login
+        if hasattr(user, 'provider_profile'):
+            response.data['provider_profile'] = ProviderProfileUpdateSerializer(user.provider_profile).data
         
         return response
 
@@ -88,6 +93,28 @@ class ProviderRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ProviderDetailSerializer
     queryset = ProviderProfile.objects.all()
+
+class ProviderRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """Recupera e atualiza o perfil do prestador autenticado."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProviderProfileUpdateSerializer
+    
+    def get_object(self):
+        """Retorna o ProviderProfile do usuário autenticado."""
+        try:
+            return self.request.user.provider_profile
+        except ProviderProfile.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Prestador não encontrado.")
+    
+    def update(self, request, *args, **kwargs):
+        """Permite atualizar dados do prestador (service_address, technical_qualification, etc)."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 class ClientRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     """Recupera e atualiza o perfil do cliente autenticado."""

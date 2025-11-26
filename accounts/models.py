@@ -12,6 +12,8 @@ class ClientProfile(models.Model):
     cpf = models.CharField(max_length=20)
     phone = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
     profile_photo = models.ImageField(
         upload_to="profile_photos/clients/",
         blank=True,
@@ -36,7 +38,10 @@ class ProviderProfile(models.Model):
     )
     full_name = models.CharField(max_length=255)
     professional_email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True)
     service_address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
     technical_qualification = models.TextField(blank=True)
     profile_photo = models.ImageField(
         upload_to="profile_photos/providers/",

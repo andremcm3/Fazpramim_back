@@ -47,8 +47,17 @@ class ClientProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ClientProfile
-        fields = ['id', 'full_name', 'username', 'email', 'cpf', 'phone', 'address', 'profile_photo', 'identity_document']
+        fields = ['id', 'full_name', 'username', 'email', 'cpf', 'phone', 'address', 'city', 'state', 'profile_photo', 'identity_document']
         read_only_fields = ['id', 'username', 'email', 'cpf']
+
+class ProviderProfileUpdateSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source='user.username')
+    email = serializers.ReadOnlyField(source='user.email')
+    
+    class Meta:
+        model = ProviderProfile
+        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo', 'identity_document', 'certifications']
+        read_only_fields = ['id', 'username', 'email']
 
 # =======================================================
 # 🔍 SERIALIZERS PARA BUSCA E DETALHES (ATUALIZADO)
@@ -72,7 +81,7 @@ class ProviderListSerializer(serializers.ModelSerializer):
     email = serializers.ReadOnlyField(source='user.email')
     class Meta:
         model = ProviderProfile
-        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'service_address', 'technical_qualification', 'profile_photo']
+        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo']
 
 class ProviderDetailSerializer(serializers.ModelSerializer):
     """Completo: Para a página de detalhes (inclui Portfolio e Reviews)."""
@@ -89,7 +98,8 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
         model = ProviderProfile
         fields = [
             'id', 'full_name', 'username', 'email', 'professional_email', 
-            'service_address', 'technical_qualification', 'profile_photo',
+            'phone',
+            'service_address', 'city', 'state', 'technical_qualification', 'profile_photo',
             'portfolio_photos', 'reviews', 'average_rating', 'total_reviews'
         ]
 
@@ -143,32 +153,39 @@ class ClientRegisterSerializer(RegisterSerializer):
     cpf = serializers.CharField(max_length=20, required=True)
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    state = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    profile_photo = serializers.ImageField(required=False, allow_null=True)
     identity_document = serializers.FileField(required=False, allow_null=True)
 
     class Meta(RegisterSerializer.Meta):
-        fields = RegisterSerializer.Meta.fields + ('full_name', 'cpf', 'phone', 'address', 'identity_document')
+        fields = RegisterSerializer.Meta.fields + ('full_name', 'cpf', 'phone', 'address', 'city', 'state', 'profile_photo', 'identity_document')
 
     @transaction.atomic
     def create(self, validated_data):
         user = super().create(validated_data) 
         ClientProfile.objects.create(
             user=user, full_name=validated_data.get('full_name'), cpf=validated_data.get('cpf'),
-            phone=validated_data.get('phone'), address=validated_data.get('address'),
-            identity_document=validated_data.get('identity_document'),
+            phone=validated_data.get('phone'), address=validated_data.get('address'), city=validated_data.get('city'), state=validated_data.get('state'),
+            profile_photo=validated_data.get('profile_photo'), identity_document=validated_data.get('identity_document'),
         )
         return user
 
 class ProviderRegisterSerializer(RegisterSerializer):
     full_name = serializers.CharField(max_length=255, required=True)
     professional_email = serializers.EmailField(required=True)
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
     service_address = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    state = serializers.CharField(max_length=100, required=False, allow_blank=True)
     technical_qualification = serializers.CharField(required=False, allow_blank=True)
+    profile_photo = serializers.ImageField(required=False, allow_null=True)
     identity_document = serializers.FileField(required=False, allow_null=True)
     certifications = serializers.FileField(required=False, allow_null=True)
 
     class Meta(RegisterSerializer.Meta):
         fields = RegisterSerializer.Meta.fields + (
-            'full_name', 'professional_email', 'service_address', 
+            'full_name', 'professional_email', 'phone', 'service_address', 'city', 'state', 'profile_photo',
             'technical_qualification', 'identity_document', 'certifications'
         )
 
@@ -177,8 +194,8 @@ class ProviderRegisterSerializer(RegisterSerializer):
         user = super().create(validated_data)
         ProviderProfile.objects.create(
             user=user, full_name=validated_data.get('full_name'), professional_email=validated_data.get('professional_email'),
-            service_address=validated_data.get('service_address'), technical_qualification=validated_data.get('technical_qualification'),
-            identity_document=validated_data.get('identity_document'), certifications=validated_data.get('certifications'),
+            phone=validated_data.get('phone'), service_address=validated_data.get('service_address'), city=validated_data.get('city'), state=validated_data.get('state'), technical_qualification=validated_data.get('technical_qualification'),
+            profile_photo=validated_data.get('profile_photo'), identity_document=validated_data.get('identity_document'), certifications=validated_data.get('certifications'),
         )
         return user
         
@@ -193,6 +210,21 @@ class LoginSerializer(serializers.Serializer):
             data['user'] = user
             return data
         raise serializers.ValidationError("Credenciais inválidas.")
+
+class ProviderRegisterResponseSerializer(serializers.Serializer):
+    """Resposta de registro do prestador com dados completos do perfil."""
+    user = UserSerializer(read_only=True)
+    token = serializers.SerializerMethodField()
+    provider_profile = serializers.SerializerMethodField()
+    
+    def get_token(self, obj):
+        return obj.get('token', '')
+    
+    def get_provider_profile(self, obj):
+        user = obj.get('user_obj')
+        if user and hasattr(user, 'provider_profile'):
+            return ProviderProfileUpdateSerializer(user.provider_profile).data
+        return None
 
 # =======================================================
 # 💬 SERIALIZERS DE CHAT E REVIEW (INPUT)
