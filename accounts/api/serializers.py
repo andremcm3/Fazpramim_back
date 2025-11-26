@@ -39,7 +39,7 @@ class ProviderSummarySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = ProviderProfile
-        fields = ("id", "full_name", "user")
+        fields = ("id", "full_name", "profile_photo", "user")
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
@@ -277,10 +277,27 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
 class ServiceRequestDetailSerializer(serializers.ModelSerializer):
     client = UserSerializer(read_only=True) 
     provider = ProviderSummarySerializer(read_only=True)
+    client_has_reviewed = serializers.SerializerMethodField()
+    provider_has_reviewed = serializers.SerializerMethodField()
+    
     class Meta:
         model = ServiceRequest
-        fields = ("id", "provider", "client", "description", "desired_datetime", "proposed_value", "status", "created_at", "updated_at")
+        fields = ("id", "provider", "client", "description", "desired_datetime", "proposed_value", "status", "created_at", "updated_at", "client_has_reviewed", "provider_has_reviewed")
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_client_has_reviewed(self, obj):
+        """Retorna True se o cliente já avaliou este serviço."""
+        try:
+            return obj.review.client_has_reviewed
+        except Review.DoesNotExist:
+            return False
+    
+    def get_provider_has_reviewed(self, obj):
+        """Retorna True se o prestador já avaliou este serviço."""
+        try:
+            return obj.review.provider_has_reviewed
+        except Review.DoesNotExist:
+            return False
 
     def update(self, instance, validated_data):
         if "status" in validated_data:
