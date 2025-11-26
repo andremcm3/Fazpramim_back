@@ -197,6 +197,68 @@ class ServiceRequestDetailAPIView(generics.RetrieveUpdateAPIView):
         
         return super().update(request, *args, **kwargs)
 
+class AcceptServiceRequestAPIView(APIView):
+    """Aceitar solicitação de serviço (Apenas Prestador)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        sr = get_object_or_404(ServiceRequest, pk=pk)
+        
+        # Verifica se o usuário é o prestador desta solicitação
+        if not (hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider):
+            return Response(
+                {"error": "Apenas o prestador pode aceitar esta solicitação."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Verifica se a solicitação está pendente
+        if sr.status != ServiceRequest.STATUS_PENDING:
+            return Response(
+                {"error": f"Não é possível aceitar uma solicitação com status '{sr.get_status_display()}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Aceita a solicitação
+        sr.status = ServiceRequest.STATUS_ACCEPTED
+        sr.save()
+        
+        serializer = ServiceRequestDetailSerializer(sr)
+        return Response({
+            "message": "Solicitação aceita com sucesso!",
+            "request": serializer.data
+        }, status=status.HTTP_200_OK)
+
+class RejectServiceRequestAPIView(APIView):
+    """Rejeitar solicitação de serviço (Apenas Prestador)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        sr = get_object_or_404(ServiceRequest, pk=pk)
+        
+        # Verifica se o usuário é o prestador desta solicitação
+        if not (hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider):
+            return Response(
+                {"error": "Apenas o prestador pode rejeitar esta solicitação."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Verifica se a solicitação está pendente
+        if sr.status != ServiceRequest.STATUS_PENDING:
+            return Response(
+                {"error": f"Não é possível rejeitar uma solicitação com status '{sr.get_status_display()}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Rejeita a solicitação
+        sr.status = ServiceRequest.STATUS_REJECTED
+        sr.save()
+        
+        serializer = ServiceRequestDetailSerializer(sr)
+        return Response({
+            "message": "Solicitação rejeitada.",
+            "request": serializer.data
+        }, status=status.HTTP_200_OK)
+
 # =======================================================
 # 💬 CHAT API
 # =======================================================

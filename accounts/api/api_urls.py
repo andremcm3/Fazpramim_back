@@ -39,6 +39,12 @@ urlpatterns = [
     
     # Detalhes/Atualizar solicitação
     path("requests/<int:pk>/", views.ServiceRequestDetailAPIView.as_view(), name="api_request_detail"),
+    
+    # Aceitar solicitação (Prestador)
+    path("requests/<int:pk>/accept/", views.AcceptServiceRequestAPIView.as_view(), name="api_accept_request"),
+    
+    # Rejeitar solicitação (Prestador)
+    path("requests/<int:pk>/reject/", views.RejectServiceRequestAPIView.as_view(), name="api_reject_request"),
 
     # ======================
     # 💬 Chat & Interações
