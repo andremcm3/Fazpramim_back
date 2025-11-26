@@ -37,6 +37,9 @@ urlpatterns = [
     # Listar solicitações (Prestador)
     path("provider/requests/", views.ProviderRequestsListAPIView.as_view(), name="api_provider_requests"),
     
+    # Listar solicitações (Cliente)
+    path("client/requests/", views.ClientRequestsListAPIView.as_view(), name="api_client_requests"),
+    
     # Detalhes/Atualizar solicitação
     path("requests/<int:pk>/", views.ServiceRequestDetailAPIView.as_view(), name="api_request_detail"),
     

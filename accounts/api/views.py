@@ -172,6 +172,22 @@ class ProviderRequestsListAPIView(generics.ListAPIView):
         
         return queryset
 
+class ClientRequestsListAPIView(generics.ListAPIView):
+    """Lista todas as solicitações feitas pelo cliente."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ServiceRequestDetailSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = ServiceRequest.objects.filter(client=user).order_by('-created_at')
+        
+        # Filtro opcional por status
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset
+
 class ServiceRequestDetailAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ServiceRequestDetailSerializer
