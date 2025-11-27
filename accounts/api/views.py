@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics, permissions, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import login
@@ -98,6 +99,8 @@ class ProviderRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     """Recupera e atualiza o perfil do prestador autenticado."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProviderProfileUpdateSerializer
+    # Garante suporte a upload de arquivos (certifications, profile_photo)
+    parser_classes = (MultiPartParser, FormParser)
     
     def get_object(self):
         """Retorna o ProviderProfile do usuário autenticado."""
@@ -111,6 +114,7 @@ class ProviderRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
         """Permite atualizar dados do prestador (service_address, technical_qualification, etc)."""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        # Suporte a multipart/form-data já feito pelos parsers acima
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)

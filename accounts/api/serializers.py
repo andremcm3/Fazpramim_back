@@ -53,11 +53,19 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 class ProviderProfileUpdateSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
     email = serializers.ReadOnlyField(source='user.email')
+    certifications_urls = serializers.SerializerMethodField()
     
     class Meta:
         model = ProviderProfile
-        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo', 'identity_document', 'certifications']
+        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo', 'identity_document', 'certifications', 'certifications_urls']
         read_only_fields = ['id', 'username', 'email']
+
+    def get_certifications_urls(self, obj):
+        if not obj.certifications:
+            return []
+        request = self.context.get('request')
+        url = obj.certifications.url
+        return [request.build_absolute_uri(url) if request else url]
 
 # =======================================================
 # 🔍 SERIALIZERS PARA BUSCA E DETALHES (ATUALIZADO)
@@ -93,6 +101,7 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
     reviews = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     total_reviews = serializers.SerializerMethodField()
+    certifications_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderProfile
@@ -100,6 +109,8 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
             'id', 'full_name', 'username', 'email', 'professional_email', 
             'phone',
             'service_address', 'city', 'state', 'technical_qualification', 'profile_photo',
+            'certifications',
+            'certifications_urls',
             'portfolio_photos', 'reviews', 'average_rating', 'total_reviews'
         ]
 
@@ -114,6 +125,13 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
 
     def get_total_reviews(self, obj):
         return Review.objects.filter(service_request__provider=obj, client_rating__isnull=False).count()
+
+    def get_certifications_urls(self, obj):
+        if not obj.certifications:
+            return []
+        request = self.context.get('request')
+        url = obj.certifications.url
+        return [request.build_absolute_uri(url) if request else url]
 
 # =======================================================
 # 🔒 SERIALIZERS DE AUTENTICAÇÃO
@@ -275,29 +293,54 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         )
 
 class ServiceRequestDetailSerializer(serializers.ModelSerializer):
-    client = UserSerializer(read_only=True) 
+    client = UserSerializer(read_only=True)
     provider = ProviderSummarySerializer(read_only=True)
     client_has_reviewed = serializers.SerializerMethodField()
     provider_has_reviewed = serializers.SerializerMethodField()
-    
+    client_rating = serializers.SerializerMethodField()
+    provider_rating = serializers.SerializerMethodField()
+    client_comment = serializers.SerializerMethodField()
+    provider_comment = serializers.SerializerMethodField()
+
     class Meta:
         model = ServiceRequest
-        fields = ("id", "provider", "client", "description", "desired_datetime", "proposed_value", "status", "created_at", "updated_at", "client_has_reviewed", "provider_has_reviewed")
+        fields = (
+            "id", "provider", "client", "description", "desired_datetime", "proposed_value", "status",
+            "created_at", "updated_at",
+            "client_has_reviewed", "provider_has_reviewed",
+            "client_rating", "provider_rating", "client_comment", "provider_comment"
+        )
         read_only_fields = ("id", "created_at", "updated_at")
 
+    def _get_review(self, obj):
+        try:
+            return obj.review
+        except Review.DoesNotExist:
+            return None
+
     def get_client_has_reviewed(self, obj):
-        """Retorna True se o cliente já avaliou este serviço."""
-        try:
-            return obj.review.client_has_reviewed
-        except Review.DoesNotExist:
-            return False
-    
+        rev = self._get_review(obj)
+        return rev.client_has_reviewed if rev else False
+
     def get_provider_has_reviewed(self, obj):
-        """Retorna True se o prestador já avaliou este serviço."""
-        try:
-            return obj.review.provider_has_reviewed
-        except Review.DoesNotExist:
-            return False
+        rev = self._get_review(obj)
+        return rev.provider_has_reviewed if rev else False
+
+    def get_client_rating(self, obj):
+        rev = self._get_review(obj)
+        return rev.client_rating if rev and rev.client_rating is not None else None
+
+    def get_provider_rating(self, obj):
+        rev = self._get_review(obj)
+        return rev.provider_rating if rev and rev.provider_rating is not None else None
+
+    def get_client_comment(self, obj):
+        rev = self._get_review(obj)
+        return rev.client_comment if rev and rev.client_comment else ""
+
+    def get_provider_comment(self, obj):
+        rev = self._get_review(obj)
+        return rev.provider_comment if rev and rev.provider_comment else ""
 
     def update(self, instance, validated_data):
         if "status" in validated_data:
