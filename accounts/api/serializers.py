@@ -54,10 +54,11 @@ class ProviderProfileUpdateSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
     email = serializers.ReadOnlyField(source='user.email')
     certifications_urls = serializers.SerializerMethodField()
+    portfolio_photos = serializers.SerializerMethodField()
     
     class Meta:
         model = ProviderProfile
-        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo', 'identity_document', 'certifications', 'certifications_urls']
+        fields = ['id', 'full_name', 'username', 'email', 'professional_email', 'phone', 'service_address', 'city', 'state', 'technical_qualification', 'profile_photo', 'identity_document', 'certifications', 'certifications_urls', 'portfolio_photos']
         read_only_fields = ['id', 'username', 'email']
 
     def get_certifications_urls(self, obj):
@@ -66,6 +67,22 @@ class ProviderProfileUpdateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         url = obj.certifications.url
         return [request.build_absolute_uri(url) if request else url]
+
+    def get_portfolio_photos(self, obj):
+        photos = obj.portfolio_photos.all().order_by('-created_at')
+        result = []
+        for p in photos:
+            try:
+                photo_url = p.photo.url
+            except Exception:
+                photo_url = ''
+            result.append({
+                'id': p.id,
+                'photo': photo_url,
+                'title': p.title or '',
+                'description': p.description or '',
+            })
+        return result
 
 # =======================================================
 # 🔍 SERIALIZERS PARA BUSCA E DETALHES (ATUALIZADO)

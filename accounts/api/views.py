@@ -120,6 +120,55 @@ class ProviderRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
         self.perform_update(serializer)
         return Response(serializer.data)
 
+# =======================================================
+# 📸 PORTFÓLIO (ADD/DELETE)
+# =======================================================
+
+class PortfolioAddAPIView(APIView):
+    """Adiciona uma mídia de portfólio para o prestador autenticado."""
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request):
+        # Garante que o usuário é prestador
+        if not hasattr(request.user, 'provider_profile'):
+            return Response({"error": "Apenas prestadores podem adicionar ao portfólio."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Aceita chaves comuns de arquivo: 'photo', 'file', 'image'
+        photo_file = (
+            request.FILES.get('photo')
+            or request.FILES.get('file')
+            or request.FILES.get('image')
+        )
+        if not photo_file:
+            return Response({"photo": ["Arquivo de foto é obrigatório (chaves aceitas: photo, file, image)."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        title = request.data.get('title', '')
+        description = request.data.get('description', '')
+
+        obj = PortfolioPhoto.objects.create(
+            provider=request.user.provider_profile,
+            photo=photo_file,
+            title=title,
+            description=description,
+        )
+        return Response(PortfolioPhotoSerializer(obj).data, status=status.HTTP_201_CREATED)
+
+class PortfolioDeleteAPIView(APIView):
+    """Remove uma mídia do portfólio pelo id (prestador dono)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        if not hasattr(request.user, 'provider_profile'):
+            return Response({"error": "Apenas prestadores podem remover do portfólio."}, status=status.HTTP_403_FORBIDDEN)
+
+        obj = get_object_or_404(PortfolioPhoto, pk=pk)
+        if obj.provider != request.user.provider_profile:
+            return Response({"error": "Sem permissão para remover este item."}, status=status.HTTP_403_FORBIDDEN)
+
+        obj.delete()
+        return Response({"message": "Item removido do portfólio."}, status=status.HTTP_200_OK)
+
 class ClientRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     """Recupera e atualiza o perfil do cliente autenticado."""
     permission_classes = [permissions.IsAuthenticated]
