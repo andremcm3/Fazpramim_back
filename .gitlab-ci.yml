@@ -1,13 +1,15 @@
-image: node:18
+image: python:3.11
 
 stages:
   - test
 
 test-backend:
   stage: test
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
   script:
-    - npm install
-    - npm test
+    - python manage.py test
   only:
     - master
     - main
