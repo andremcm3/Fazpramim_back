@@ -2,6 +2,9 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 
+# Estas rotas servem páginas HTML (Templates Django)
+# A API REST (usada pelo React) está em accounts/api/api_urls.py
+
 urlpatterns = [
     # --- Registro ---
     path('register/', views.register_choice, name='register'),
@@ -22,15 +25,27 @@ urlpatterns = [
 
     # Perfil público de prestador
     path('prestador/<int:pk>/', views.provider_detail, name='provider_detail'),
+    
+    # Perfil público de cliente (visualização por qualquer usuário)
+    path('cliente/<str:username>/', views.client_detail, name='client_detail'),
 
-    # Criar solicitação via formulário HTML (não API)
+    # --- Solicitações (HTML Forms) ---
+    # Criar solicitação ao prestador
     path('prestador/<int:pk>/solicitar/', views.create_request, name='create_request'),
 
-    # --- Solicitações ---
     path('meu-perfil/solicitacoes/', views.provider_requests, name='provider_requests'),
     path('minhas-solicitacoes/', views.client_requests, name='client_requests'),
     path('solicitacao/<int:pk>/', views.request_detail, name='request_detail'),
 
-    # --- Chat HTML ---
+    # --- Chat & Ações (HTML) ---
     path('solicitacao/<int:pk>/chat/', views.chat_view, name='chat_view'),
+    
+    # Marcar serviço como concluído
+    path('solicitacao/<int:pk>/concluir/', views.complete_service, name='complete_service'),
+    
+    # Avaliar serviço concluído
+    path('solicitacao/<int:pk>/avaliar/', views.review_service, name='review_service'),
+    
+    # Gerenciar portfólio (prestador)
+    path('portfolio/', views.manage_portfolio, name='manage_portfolio'),
 ]

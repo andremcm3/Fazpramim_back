@@ -116,9 +116,71 @@ def my_profile(request):
 
 def provider_detail(request, pk):
     """Página pública com os detalhes de um prestador de serviço."""
+    from .models import Review, PortfolioPhoto
+    
     provider = get_object_or_404(ProviderProfile, pk=pk)
-    context = {"provider": provider}
+    
+    # Buscar todas as avaliações feitas por clientes sobre este prestador
+    reviews = Review.objects.filter(
+        service_request__provider=provider,
+        client_rating__isnull=False
+    ).select_related('service_request', 'service_request__client').order_by('-client_reviewed_at')
+    
+    # Buscar fotos do portfólio do prestador
+    portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
+    
+    # Calcular média de avaliações
+    total_reviews = reviews.count()
+    if total_reviews > 0:
+        avg_rating = sum(r.client_rating for r in reviews) / total_reviews
+    else:
+        avg_rating = None
+    
+    context = {
+        "provider": provider,
+        "reviews": reviews,
+        "portfolio_photos": portfolio_photos,
+        "total_reviews": total_reviews,
+        "avg_rating": avg_rating,
+    }
     return render(request, "accounts/provider_detail.html", context)
+
+
+def client_detail(request, username):
+    """Página pública com os detalhes de um cliente."""
+    from .models import Review
+    from django.contrib.auth.models import User
+    
+    client_user = get_object_or_404(User, username=username)
+    
+    # Verificar se o usuário tem perfil de cliente
+    if not hasattr(client_user, 'client_profile'):
+        messages.error(request, 'Este usuário não é um cliente.')
+        return redirect('home')
+    
+    client_profile = client_user.client_profile
+    
+    # Buscar todas as avaliações feitas por prestadores sobre este cliente
+    reviews = Review.objects.filter(
+        service_request__client=client_user,
+        provider_rating__isnull=False
+    ).select_related('service_request', 'service_request__provider').order_by('-provider_reviewed_at')
+    
+    # Calcular média de avaliações
+    total_reviews = reviews.count()
+    if total_reviews > 0:
+        avg_rating = sum(r.provider_rating for r in reviews) / total_reviews
+    else:
+        avg_rating = None
+    
+    context = {
+        "client": client_user,
+        "client_profile": client_profile,
+        "reviews": reviews,
+        "total_reviews": total_reviews,
+        "avg_rating": avg_rating,
+    }
+    return render(request, "accounts/client_detail.html", context)
 
 
 @login_required
@@ -164,15 +226,39 @@ def provider_requests(request):
         return redirect('my_profile')
 
     provider = request.user.provider_profile
-    requests_qs = ServiceRequest.objects.filter(provider=provider).order_by('-created_at')
-    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'provider'})
+    active_requests = ServiceRequest.objects.filter(
+        provider=provider
+    ).exclude(status=ServiceRequest.STATUS_COMPLETED).order_by('-created_at')
+    
+    completed_requests = ServiceRequest.objects.filter(
+        provider=provider,
+        status=ServiceRequest.STATUS_COMPLETED
+    ).order_by('-updated_at')
+    
+    return render(request, 'accounts/request_list.html', {
+        'active_requests': active_requests,
+        'completed_requests': completed_requests,
+        'view_type': 'provider'
+    })
 
 
 @login_required
 def client_requests(request):
     # Lista de solicitações enviadas pelo cliente logado
-    requests_qs = ServiceRequest.objects.filter(client=request.user).order_by('-created_at')
-    return render(request, 'accounts/request_list.html', {'requests': requests_qs, 'view_type': 'client'})
+    active_requests = ServiceRequest.objects.filter(
+        client=request.user
+    ).exclude(status=ServiceRequest.STATUS_COMPLETED).order_by('-created_at')
+    
+    completed_requests = ServiceRequest.objects.filter(
+        client=request.user,
+        status=ServiceRequest.STATUS_COMPLETED
+    ).order_by('-updated_at')
+    
+    return render(request, 'accounts/request_list.html', {
+        'active_requests': active_requests,
+        'completed_requests': completed_requests,
+        'view_type': 'client'
+    })
 
 
 @login_required
@@ -211,8 +297,8 @@ def chat_view(request, pk):
         messages.error(request, 'Você não tem permissão para acessar este chat.')
         return redirect('home')
 
-    # Apenas permitir chat se a solicitação foi aceita
-    if sr.status != ServiceRequest.STATUS_ACCEPTED:
+    # Apenas permitir chat se a solicitação foi aceita (ou já concluída, mas ainda pode ver)
+    if sr.status not in [ServiceRequest.STATUS_ACCEPTED, ServiceRequest.STATUS_COMPLETED]:
         messages.warning(request, 'O chat está disponível apenas para solicitações aceitas.')
         return redirect('request_detail', pk=pk)
 
@@ -239,3 +325,170 @@ def chat_view(request, pk):
         'is_client': is_client,
     }
     return render(request, 'accounts/chat.html', context)
+
+
+@login_required
+def complete_service(request, pk):
+    """Marca o serviço como concluído pelo cliente ou prestador."""
+    sr = get_object_or_404(ServiceRequest, pk=pk)
+
+    # Verificar se é o prestador ou cliente
+    is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
+    is_client = request.user == sr.client
+
+    if not (is_provider or is_client):
+        messages.error(request, 'Você não tem permissão para marcar este serviço como concluído.')
+        return redirect('home')
+
+    # Só pode marcar como concluído se o serviço foi aceito
+    if sr.status != ServiceRequest.STATUS_ACCEPTED:
+        messages.warning(request, 'Apenas serviços aceitos podem ser marcados como concluídos.')
+        return redirect('request_detail', pk=pk)
+
+    if request.method == 'POST':
+        # Marcar como concluído pelo cliente ou prestador
+        if is_client:
+            sr.completed_by_client = True
+        elif is_provider:
+            sr.completed_by_provider = True
+        
+        # Se ambos marcaram como concluído, mudar o status
+        if sr.completed_by_client and sr.completed_by_provider:
+            sr.status = ServiceRequest.STATUS_COMPLETED
+            messages.success(request, 'Serviço concluído com sucesso! Ambas as partes confirmaram a conclusão.')
+        else:
+            if is_client:
+                messages.success(request, 'Você marcou o serviço como concluído. Aguardando confirmação do prestador.')
+            else:
+                messages.success(request, 'Você marcou o serviço como concluído. Aguardando confirmação do cliente.')
+        
+        sr.save()
+        return redirect('request_detail', pk=pk)
+
+    return redirect('request_detail', pk=pk)
+
+
+@login_required
+def manage_portfolio(request):
+    """Permite ao prestador gerenciar as fotos do seu portfólio."""
+    from .models import PortfolioPhoto
+    
+    # Verificar se é prestador
+    if not hasattr(request.user, 'provider_profile'):
+        messages.error(request, 'Apenas prestadores podem gerenciar portfólio.')
+        return redirect('my_profile')
+    
+    provider = request.user.provider_profile
+    
+    # Adicionar foto
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            photo = request.FILES.get('photo')
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            
+            if photo:
+                PortfolioPhoto.objects.create(
+                    provider=provider,
+                    photo=photo,
+                    title=title,
+                    description=description
+                )
+                messages.success(request, 'Foto adicionada ao portfólio com sucesso!')
+            else:
+                messages.error(request, 'Por favor, selecione uma foto.')
+        
+        elif action == 'delete':
+            photo_id = request.POST.get('photo_id')
+            try:
+                photo = PortfolioPhoto.objects.get(id=photo_id, provider=provider)
+                photo.delete()
+                messages.success(request, 'Foto removida do portfólio.')
+            except PortfolioPhoto.DoesNotExist:
+                messages.error(request, 'Foto não encontrada.')
+        
+        return redirect('manage_portfolio')
+    
+    # Listar fotos do portfólio
+    portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
+    
+    context = {
+        'portfolio_photos': portfolio_photos,
+    }
+    return render(request, 'accounts/manage_portfolio.html', context)
+
+
+@login_required
+def review_service(request, pk):
+    """Permite ao cliente ou prestador avaliar o serviço após conclusão."""
+    from .models import Review
+    from django.utils import timezone
+    
+    sr = get_object_or_404(ServiceRequest, pk=pk)
+
+    # Verificar se é o prestador ou cliente
+    is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
+    is_client = request.user == sr.client
+
+    if not (is_provider or is_client):
+        messages.error(request, 'Você não tem permissão para avaliar este serviço.')
+        return redirect('home')
+
+    # Só pode avaliar se o serviço foi concluído
+    if sr.status != ServiceRequest.STATUS_COMPLETED:
+        messages.warning(request, 'Apenas serviços concluídos podem ser avaliados.')
+        return redirect('request_detail', pk=pk)
+
+    # Buscar ou criar review
+    review, created = Review.objects.get_or_create(service_request=sr)
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        comment = request.POST.get('comment', '').strip()
+        photo = request.FILES.get('photo')
+
+        # Validar rating
+        try:
+            rating = int(rating)
+            if rating < 0 or rating > 5:
+                messages.error(request, 'A avaliação deve ser entre 0 e 5 estrelas.')
+                return redirect('review_service', pk=pk)
+        except (ValueError, TypeError):
+            messages.error(request, 'Avaliação inválida.')
+            return redirect('review_service', pk=pk)
+
+        # Salvar avaliação do cliente
+        if is_client:
+            if review.client_has_reviewed:
+                messages.warning(request, 'Você já avaliou este serviço.')
+            else:
+                review.client_rating = rating
+                review.client_comment = comment
+                if photo:
+                    review.client_photo = photo
+                review.client_reviewed_at = timezone.now()
+                review.save()
+                messages.success(request, 'Sua avaliação foi registrada com sucesso!')
+        
+        # Salvar avaliação do prestador
+        elif is_provider:
+            if review.provider_has_reviewed:
+                messages.warning(request, 'Você já avaliou este cliente.')
+            else:
+                review.provider_rating = rating
+                review.provider_comment = comment
+                review.provider_reviewed_at = timezone.now()
+                review.save()
+                messages.success(request, 'Sua avaliação foi registrada com sucesso!')
+
+        return redirect('request_detail', pk=pk)
+
+    context = {
+        'service_request': sr,
+        'review': review,
+        'is_provider': is_provider,
+        'is_client': is_client,
+    }
+    return render(request, 'accounts/review_service.html', context)

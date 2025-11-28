@@ -138,9 +138,11 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Para aceitar POST/PUT/DELETE vindos de fora
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
+    "http://127.0.0.1:8000",
     "http://127.0.0.1",
+
     "https://fazpramim-front.onrender.com",
-   
+
 ]
 
 # Para permitir cookies de frontend externo
@@ -149,7 +151,7 @@ SESSION_COOKIE_SAMESITE = None
 
 CSRF_COOKIE_SECURE = False   # Em produção → True
 SESSION_COOKIE_SECURE = False
-
+    
 
 # ------------------------
 # DEFAULTS

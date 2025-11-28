@@ -4,48 +4,101 @@
 
 <p><a href="{% url 'my_profile' %}">&larr; Voltar ao Meu Perfil</a></p>
 
-{% if requests %}
-<div style="display:flex; flex-direction:column; gap:1rem; margin-top:1.5rem;">
-    {% for r in requests %}
-        <div style="border:1px solid #ddd; padding:1.5rem; border-radius:8px; background:#f9f9f9;">
-        <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-                <h3 style="margin:0 0 0.5rem 0;">Solicitação #{{ r.id }}</h3>
-                {% if view_type == 'provider' %}
-                <p style="margin:0.25rem 0;"><strong>Cliente:</strong> {{ r.client.username }}</p>
-                {% else %}
-                <p style="margin:0.25rem 0;"><strong>Prestador:</strong> {{ r.provider.full_name }}</p>
-                {% endif %}
-                <p style="margin:0.25rem 0;"><strong>Status:</strong> 
-                    <span style="padding:0.25rem 0.5rem; border-radius:4px; background:{% if r.status == 'pending' %}#FFA500{% elif r.status == 'accepted' %}#28A745{% else %}#DC3545{% endif %}; color:white; font-size:0.85rem;">
-                        {{ r.get_status_display }}
-                    </span>
-                </p>
-                <p style="margin:0.25rem 0;"><strong>Data:</strong> {{ r.created_at|date:"d/m/Y H:i" }}</p>
-                {% if r.desired_datetime %}
-                <p style="margin:0.25rem 0;"><strong>Horário desejado:</strong> {{ r.desired_datetime|date:"d/m/Y H:i" }}</p>
-                {% endif %}
-                {% if r.proposed_value %}
-                <p style="margin:0.25rem 0;"><strong>Valor proposto:</strong> R$ {{ r.proposed_value }}</p>
-                {% endif %}
+<!-- Solicitações Ativas -->
+<div style="margin-top:2rem;">
+    <h2 style="margin-bottom:1rem; color:#333; border-bottom:2px solid #4A90E2; padding-bottom:0.5rem;">Solicitações em Aberto</h2>
+    {% if active_requests %}
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+        {% for r in active_requests %}
+            <div style="border:1px solid #ddd; padding:1.5rem; border-radius:8px; background:#f9f9f9;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                    <h3 style="margin:0 0 0.5rem 0;">Solicitação #{{ r.id }}</h3>
+                    {% if view_type == 'provider' %}
+                    <p style="margin:0.25rem 0;"><strong>Cliente:</strong> <a href="{% url 'client_detail' r.client.username %}" style="color:#4A90E2; text-decoration:none;">{{ r.client.username }}</a></p>
+                    {% else %}
+                    <p style="margin:0.25rem 0;"><strong>Prestador:</strong> <a href="{% url 'provider_detail' r.provider.pk %}" style="color:#4A90E2; text-decoration:none;">{{ r.provider.full_name }}</a></p>
+                    {% endif %}
+                    <p style="margin:0.25rem 0;"><strong>Status:</strong> 
+                        <span style="padding:0.25rem 0.5rem; border-radius:4px; background:{% if r.status == 'pending' %}#FFA500{% elif r.status == 'accepted' %}#28A745{% else %}#DC3545{% endif %}; color:white; font-size:0.85rem;">
+                            {{ r.get_status_display }}
+                        </span>
+                    </p>
+                    <p style="margin:0.25rem 0;"><strong>Data:</strong> {{ r.created_at|date:"d/m/Y H:i" }}</p>
+                    {% if r.desired_datetime %}
+                    <p style="margin:0.25rem 0;"><strong>Horário desejado:</strong> {{ r.desired_datetime|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                    {% if r.proposed_value %}
+                    <p style="margin:0.25rem 0;"><strong>Valor proposto:</strong> R$ {{ r.proposed_value }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{% url 'request_detail' r.id %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px; display:inline-block;">Ver Detalhes</a>
+                </div>
             </div>
-            <div>
-                <a href="{% url 'request_detail' r.id %}" style="padding:0.5rem 1rem; background:#4A90E2; color:white; text-decoration:none; border-radius:6px; display:inline-block;">Ver Detalhes</a>
+            {% if r.description %}
+            <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid #ddd;">
+                <p style="margin:0;"><strong>Descrição:</strong></p>
+                <p style="margin:0.5rem 0 0 0; color:#555;">{{ r.description|linebreaks }}</p>
             </div>
+            {% endif %}
         </div>
-        {% if r.description %}
-        <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid #ddd;">
-            <p style="margin:0;"><strong>Descrição:</strong></p>
-            <p style="margin:0.5rem 0 0 0; color:#555;">{{ r.description|linebreaks }}</p>
-        </div>
-        {% endif %}
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <p style="padding:2rem; background:#f9f9f9; border-radius:8px; text-align:center; color:#666;">
+        Nenhuma solicitação em aberto no momento.
+    </p>
+    {% endif %}
 </div>
-{% else %}
-<p style="margin-top:2rem; padding:2rem; background:#f9f9f9; border-radius:8px; text-align:center; color:#666;">
-    Você ainda não recebeu nenhuma solicitação de serviço.
-</p>
-{% endif %}
+
+<!-- Histórico de Solicitações Concluídas -->
+<div style="margin-top:3rem;">
+    <h2 style="margin-bottom:1rem; color:#333; border-bottom:2px solid #007BFF; padding-bottom:0.5rem;">Histórico de Serviços Concluídos</h2>
+    {% if completed_requests %}
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+        {% for r in completed_requests %}
+            <div style="border:1px solid #007BFF; padding:1.5rem; border-radius:8px; background:#f0f8ff;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                    <h3 style="margin:0 0 0.5rem 0;">Solicitação #{{ r.id }}</h3>
+                    {% if view_type == 'provider' %}
+                    <p style="margin:0.25rem 0;"><strong>Cliente:</strong> <a href="{% url 'client_detail' r.client.username %}" style="color:#4A90E2; text-decoration:none;">{{ r.client.username }}</a></p>
+                    {% else %}
+                    <p style="margin:0.25rem 0;"><strong>Prestador:</strong> <a href="{% url 'provider_detail' r.provider.pk %}" style="color:#4A90E2; text-decoration:none;">{{ r.provider.full_name }}</a></p>
+                    {% endif %}
+                    <p style="margin:0.25rem 0;"><strong>Status:</strong> 
+                        <span style="padding:0.25rem 0.5rem; border-radius:4px; background:#007BFF; color:white; font-size:0.85rem;">
+                            ✓ {{ r.get_status_display }}
+                        </span>
+                    </p>
+                    <p style="margin:0.25rem 0;"><strong>Data de criação:</strong> {{ r.created_at|date:"d/m/Y H:i" }}</p>
+                    <p style="margin:0.25rem 0;"><strong>Concluído em:</strong> {{ r.updated_at|date:"d/m/Y H:i" }}</p>
+                    {% if r.desired_datetime %}
+                    <p style="margin:0.25rem 0;"><strong>Horário desejado:</strong> {{ r.desired_datetime|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                    {% if r.proposed_value %}
+                    <p style="margin:0.25rem 0;"><strong>Valor proposto:</strong> R$ {{ r.proposed_value }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{% url 'request_detail' r.id %}" style="padding:0.5rem 1rem; background:#007BFF; color:white; text-decoration:none; border-radius:6px; display:inline-block;">Ver Detalhes</a>
+                </div>
+            </div>
+            {% if r.description %}
+            <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid #99c9ff;">
+                <p style="margin:0;"><strong>Descrição:</strong></p>
+                <p style="margin:0.5rem 0 0 0; color:#555;">{{ r.description|linebreaks }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="padding:2rem; background:#f0f8ff; border-radius:8px; text-align:center; color:#666;">
+        Nenhum serviço concluído ainda.
+    </p>
+    {% endif %}
+</div>
 
 {% endblock %}

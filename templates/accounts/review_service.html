@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<p><a href="{% url 'request_detail' service_request.id %}">&larr; Voltar aos Detalhes</a></p>
+
+<div style="max-width:700px; margin:2rem auto; padding:2rem; border:1px solid #ddd; border-radius:12px; background:#fff;">
+    <h1 style="margin:0 0 1.5rem 0;">Avaliar Serviço #{{ service_request.id }}</h1>
+
+    <div style="padding:1rem; background:#f9f9f9; border-radius:8px; margin-bottom:2rem;">
+        <p style="margin:0;"><strong>Prestador:</strong> {{ service_request.provider.full_name }}</p>
+        <p style="margin:0.25rem 0 0 0;"><strong>Cliente:</strong> {{ service_request.client.username }}</p>
+    </div>
+
+    {% if is_client %}
+        {% if review.client_has_reviewed %}
+            <div style="padding:1.5rem; background:#d4edda; border:1px solid #28A745; border-radius:8px; text-align:center;">
+                <p style="margin:0; color:#155724; font-weight:600;">✓ Você já avaliou este serviço!</p>
+                <div style="margin-top:1rem;">
+                    <p style="margin:0; color:#155724;"><strong>Sua avaliação:</strong></p>
+                    <div style="font-size:2rem; color:#FFC107; margin:0.5rem 0;">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.client_rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% if review.client_comment %}
+                        <p style="margin:1rem 0 0 0; color:#155724; font-style:italic;">"{{ review.client_comment }}"</p>
+                    {% endif %}
+                    {% if review.client_photo %}
+                        <div style="margin-top:1rem;">
+                            <img src="{{ review.client_photo.url }}" alt="Foto do trabalho" style="max-width:300px; border-radius:8px; border:2px solid #28A745;">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:1.5rem;">
+                {% csrf_token %}
+                
+                <div>
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Avalie o Prestador de Serviço:</label>
+                    <div style="display:flex; gap:0.5rem; font-size:2.5rem; color:#DDD;">
+                        <input type="radio" name="rating" value="0" id="rating0" style="display:none;" checked>
+                        <input type="radio" name="rating" value="1" id="rating1" style="display:none;">
+                        <input type="radio" name="rating" value="2" id="rating2" style="display:none;">
+                        <input type="radio" name="rating" value="3" id="rating3" style="display:none;">
+                        <input type="radio" name="rating" value="4" id="rating4" style="display:none;">
+                        <input type="radio" name="rating" value="5" id="rating5" style="display:none;">
+                        
+                        <span class="star" data-rating="1" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="2" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="3" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="4" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="5" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                    </div>
+                    <p id="rating-text" style="margin:0.5rem 0 0 0; color:#666; font-size:0.9rem;">Selecione uma avaliação (0 a 5 estrelas)</p>
+                </div>
+
+                <div>
+                    <label for="comment" style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Comentário (opcional):</label>
+                    <textarea name="comment" id="comment" placeholder="Conte como foi sua experiência..." style="width:100%; padding:0.75rem; border:1px solid #ddd; border-radius:8px; resize:vertical; min-height:120px; font-family:inherit;"></textarea>
+                </div>
+
+                <div>
+                    <label for="photo" style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Foto do Trabalho Realizado (opcional):</label>
+                    <input type="file" name="photo" id="photo" accept="image/*" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:8px;">
+                    <p style="margin:0.5rem 0 0 0; font-size:0.85rem; color:#666;">Esta foto será exibida no portfólio do prestador</p>
+                </div>
+
+                <button type="submit" style="padding:1rem; background:#4A90E2; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
+                    Enviar Avaliação
+                </button>
+            </form>
+        {% endif %}
+    {% elif is_provider %}
+        {% if review.provider_has_reviewed %}
+            <div style="padding:1.5rem; background:#d4edda; border:1px solid #28A745; border-radius:8px; text-align:center;">
+                <p style="margin:0; color:#155724; font-weight:600;">✓ Você já avaliou este cliente!</p>
+                <div style="margin-top:1rem;">
+                    <p style="margin:0; color:#155724;"><strong>Sua avaliação:</strong></p>
+                    <div style="font-size:2rem; color:#FFC107; margin:0.5rem 0;">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.provider_rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% if review.provider_comment %}
+                        <p style="margin:1rem 0 0 0; color:#155724; font-style:italic;">"{{ review.provider_comment }}"</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:1.5rem;">
+                {% csrf_token %}
+                
+                <div>
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Avalie o Cliente:</label>
+                    <div style="display:flex; gap:0.5rem; font-size:2.5rem; color:#DDD;">
+                        <input type="radio" name="rating" value="0" id="rating0" style="display:none;" checked>
+                        <input type="radio" name="rating" value="1" id="rating1" style="display:none;">
+                        <input type="radio" name="rating" value="2" id="rating2" style="display:none;">
+                        <input type="radio" name="rating" value="3" id="rating3" style="display:none;">
+                        <input type="radio" name="rating" value="4" id="rating4" style="display:none;">
+                        <input type="radio" name="rating" value="5" id="rating5" style="display:none;">
+                        
+                        <span class="star" data-rating="1" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="2" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="3" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="4" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                        <span class="star" data-rating="5" style="cursor:pointer; transition:color 0.2s;">☆</span>
+                    </div>
+                    <p id="rating-text" style="margin:0.5rem 0 0 0; color:#666; font-size:0.9rem;">Selecione uma avaliação (0 a 5 estrelas)</p>
+                </div>
+
+                <div>
+                    <label for="comment" style="display:block; margin-bottom:0.5rem; font-weight:600; color:#333;">Comentário (opcional):</label>
+                    <textarea name="comment" id="comment" placeholder="Conte como foi sua experiência..." style="width:100%; padding:0.75rem; border:1px solid #ddd; border-radius:8px; resize:vertical; min-height:120px; font-family:inherit;"></textarea>
+                </div>
+
+                <button type="submit" style="padding:1rem; background:#4A90E2; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">
+                    Enviar Avaliação
+                </button>
+            </form>
+        {% endif %}
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star');
+    const ratingText = document.getElementById('rating-text');
+    let currentRating = 0;
+
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            currentRating = rating;
+            document.getElementById('rating' + rating).checked = true;
+            updateStars(rating);
+            updateRatingText(rating);
+        });
+
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            updateStars(rating);
+        });
+    });
+
+    document.querySelector('form').addEventListener('mouseleave', function() {
+        updateStars(currentRating);
+    });
+
+    function updateStars(rating) {
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.textContent = '★';
+                star.style.color = '#FFC107';
+            } else {
+                star.textContent = '☆';
+                star.style.color = '#DDD';
+            }
+        });
+    }
+
+    function updateRatingText(rating) {
+        const texts = {
+            0: 'Selecione uma avaliação (0 a 5 estrelas)',
+            1: '1 estrela - Muito insatisfeito',
+            2: '2 estrelas - Insatisfeito',
+            3: '3 estrelas - Regular',
+            4: '4 estrelas - Satisfeito',
+            5: '5 estrelas - Muito satisfeito'
+        };
+        ratingText.textContent = texts[rating] || texts[0];
+        ratingText.style.color = rating > 0 ? '#4A90E2' : '#666';
+        ratingText.style.fontWeight = rating > 0 ? '600' : 'normal';
+    }
+});
+</script>
+
+{% endblock %}
