@@ -142,8 +142,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1",
     "http://localhost:8080",      # Adicionado para garantir
     "http://127.0.0.1:8080",
-    # Aqui depois colocamos o domínio do Lovable:
-    # "https://xxxxx.lovable.app"
+    "https://fazpramim-front.onrender.com"
 ]
 
 # Para permitir cookies de frontend externo

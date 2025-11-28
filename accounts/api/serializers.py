@@ -15,7 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ("id", "username", "email", "is_provider", "full_name")
+        fields = ("id", "username", "email", "is_provider", "full_name") 
     
     def get_is_provider(self, obj):
         return hasattr(obj, 'provider_profile')
