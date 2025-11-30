@@ -25,3 +25,7 @@ test-backend:
   only:
     - master
     - main
+
+  git add requirements.txt .gitlab-ci.yml
+git commit -m "arrumar"
+git push origin master

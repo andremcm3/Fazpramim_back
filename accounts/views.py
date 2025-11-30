@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-
 from .forms import (
     SignUpForm,
     ClientSignUpForm,
@@ -16,19 +15,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 try:
-    # Import DRF views for API integration (used by urls)
     from .api.views import (
         CreateServiceRequestAPIView,
         ProviderRequestsListAPIView,
         ServiceRequestDetailAPIView,
     )
 except Exception:
-    # If DRF is not available, the import will fail but views will still work
     pass
 from django.shortcuts import get_object_or_404
 
 
-# --------- CADASTRO GENÉRICO (SE AINDA QUISER USAR) --------- #
 def register(request):
     if request.method == "POST":
         form = SignUpForm(request.POST)
@@ -42,17 +38,14 @@ def register(request):
 
 
 def logout_view(request):
-    """Faz logout e redireciona para a página de login."""
     logout(request)
     return redirect("login")
 
 
-# --------- ESCOLHA DO TIPO DE CADASTRO --------- #
 def register_choice(request):
     return render(request, "accounts/register_choice.html")
 
 
-# --------- CADASTRO DE CLIENTE --------- #
 def register_client(request):
     if request.method == "POST":
         form = ClientSignUpForm(request.POST, request.FILES)
@@ -65,7 +58,6 @@ def register_client(request):
     return render(request, "accounts/register_client.html", {"form": form})
 
 
-# --------- CADASTRO DE PRESTADOR --------- #
 def register_provider(request):
     if request.method == "POST":
         form = ProviderSignUpForm(request.POST, request.FILES)
@@ -78,17 +70,14 @@ def register_provider(request):
     return render(request, "accounts/register_provider.html", {"form": form})
 
 
-# --------- PÁGINA "MEU PERFIL" (CLIENTE OU PRESTADOR) --------- #
 @login_required
 def my_profile(request):
     user = request.user
 
-    # Descobre se o usuario é cliente ou prestador
     is_client = hasattr(user, "client_profile")
     is_provider = hasattr(user, "provider_profile")
 
     if not is_client and not is_provider:
-        # Se não tiver perfil ainda, manda escolher o tipo de cadastro
         return redirect("register_choice")
 
     if is_client:
@@ -115,21 +104,17 @@ def my_profile(request):
 
 
 def provider_detail(request, pk):
-    """Página pública com os detalhes de um prestador de serviço."""
     from .models import Review, PortfolioPhoto
     
     provider = get_object_or_404(ProviderProfile, pk=pk)
     
-    # Buscar todas as avaliações feitas por clientes sobre este prestador
     reviews = Review.objects.filter(
         service_request__provider=provider,
         client_rating__isnull=False
     ).select_related('service_request', 'service_request__client').order_by('-client_reviewed_at')
     
-    # Buscar fotos do portfólio do prestador
     portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
     
-    # Calcular média de avaliações
     total_reviews = reviews.count()
     if total_reviews > 0:
         avg_rating = sum(r.client_rating for r in reviews) / total_reviews
@@ -147,26 +132,22 @@ def provider_detail(request, pk):
 
 
 def client_detail(request, username):
-    """Página pública com os detalhes de um cliente."""
     from .models import Review
     from django.contrib.auth.models import User
     
     client_user = get_object_or_404(User, username=username)
     
-    # Verificar se o usuário tem perfil de cliente
     if not hasattr(client_user, 'client_profile'):
         messages.error(request, 'Este usuário não é um cliente.')
         return redirect('home')
     
     client_profile = client_user.client_profile
     
-    # Buscar todas as avaliações feitas por prestadores sobre este cliente
     reviews = Review.objects.filter(
         service_request__client=client_user,
         provider_rating__isnull=False
     ).select_related('service_request', 'service_request__provider').order_by('-provider_reviewed_at')
     
-    # Calcular média de avaliações
     total_reviews = reviews.count()
     if total_reviews > 0:
         avg_rating = sum(r.provider_rating for r in reviews) / total_reviews
@@ -187,7 +168,6 @@ def client_detail(request, username):
 def create_request(request, pk):
     provider = get_object_or_404(ProviderProfile, pk=pk)
 
-    # Não permitir que o próprio prestador peça serviço a si mesmo
     if hasattr(request.user, 'provider_profile') and request.user.provider_profile.pk == provider.pk:
         messages.error(request, "Você não pode solicitar um serviço para si mesmo.")
         return redirect('provider_detail', pk=pk)
@@ -199,7 +179,6 @@ def create_request(request, pk):
             sr.provider = provider
             sr.client = request.user
             sr.save()
-            # AJAX request -> return JSON
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
@@ -211,7 +190,6 @@ def create_request(request, pk):
             return redirect('provider_detail', pk=pk)
         else:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                # return form errors as json
                 return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
         form = ServiceRequestForm()
@@ -221,7 +199,6 @@ def create_request(request, pk):
 
 @login_required
 def provider_requests(request):
-    # Lista de solicitações para o prestador logado
     if not hasattr(request.user, 'provider_profile'):
         return redirect('my_profile')
 
@@ -244,7 +221,6 @@ def provider_requests(request):
 
 @login_required
 def client_requests(request):
-    # Lista de solicitações enviadas pelo cliente logado
     active_requests = ServiceRequest.objects.filter(
         client=request.user
     ).exclude(status=ServiceRequest.STATUS_COMPLETED).order_by('-created_at')
@@ -265,11 +241,9 @@ def client_requests(request):
 def request_detail(request, pk):
     sr = get_object_or_404(ServiceRequest, pk=pk)
 
-    # Permitir visualização se for o provider dono ou o cliente que enviou
     if not (hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider) and request.user != sr.client:
         return redirect('home')
 
-    # Aceitar / rejeitar (apenas provider dono)
     if request.method == 'POST' and hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider:
         action = request.POST.get('action')
         if action == 'accept':
@@ -289,7 +263,6 @@ def request_detail(request, pk):
 def chat_view(request, pk):
     sr = get_object_or_404(ServiceRequest, pk=pk)
 
-    # Verificar se é o prestador ou cliente
     is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
     is_client = request.user == sr.client
 
@@ -297,15 +270,12 @@ def chat_view(request, pk):
         messages.error(request, 'Você não tem permissão para acessar este chat.')
         return redirect('home')
 
-    # Apenas permitir chat se a solicitação foi aceita (ou já concluída, mas ainda pode ver)
     if sr.status not in [ServiceRequest.STATUS_ACCEPTED, ServiceRequest.STATUS_COMPLETED]:
         messages.warning(request, 'O chat está disponível apenas para solicitações aceitas.')
         return redirect('request_detail', pk=pk)
 
-    # Marcar mensagens como lidas para o usuário atual
     ChatMessage.objects.filter(service_request=sr).exclude(sender=request.user).update(is_read=True)
 
-    # Processar envio de mensagem
     if request.method == 'POST':
         content = request.POST.get('content', '').strip()
         if content:
@@ -329,10 +299,8 @@ def chat_view(request, pk):
 
 @login_required
 def complete_service(request, pk):
-    """Marca o serviço como concluído pelo cliente ou prestador."""
     sr = get_object_or_404(ServiceRequest, pk=pk)
 
-    # Verificar se é o prestador ou cliente
     is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
     is_client = request.user == sr.client
 
@@ -340,19 +308,16 @@ def complete_service(request, pk):
         messages.error(request, 'Você não tem permissão para marcar este serviço como concluído.')
         return redirect('home')
 
-    # Só pode marcar como concluído se o serviço foi aceito
     if sr.status != ServiceRequest.STATUS_ACCEPTED:
         messages.warning(request, 'Apenas serviços aceitos podem ser marcados como concluídos.')
         return redirect('request_detail', pk=pk)
 
     if request.method == 'POST':
-        # Marcar como concluído pelo cliente ou prestador
         if is_client:
             sr.completed_by_client = True
         elif is_provider:
             sr.completed_by_provider = True
         
-        # Se ambos marcaram como concluído, mudar o status
         if sr.completed_by_client and sr.completed_by_provider:
             sr.status = ServiceRequest.STATUS_COMPLETED
             messages.success(request, 'Serviço concluído com sucesso! Ambas as partes confirmaram a conclusão.')
@@ -370,17 +335,14 @@ def complete_service(request, pk):
 
 @login_required
 def manage_portfolio(request):
-    """Permite ao prestador gerenciar as fotos do seu portfólio."""
     from .models import PortfolioPhoto
     
-    # Verificar se é prestador
     if not hasattr(request.user, 'provider_profile'):
         messages.error(request, 'Apenas prestadores podem gerenciar portfólio.')
         return redirect('my_profile')
     
     provider = request.user.provider_profile
     
-    # Adicionar foto
     if request.method == 'POST':
         action = request.POST.get('action')
         
@@ -411,7 +373,6 @@ def manage_portfolio(request):
         
         return redirect('manage_portfolio')
     
-    # Listar fotos do portfólio
     portfolio_photos = PortfolioPhoto.objects.filter(provider=provider)
     
     context = {
@@ -422,13 +383,11 @@ def manage_portfolio(request):
 
 @login_required
 def review_service(request, pk):
-    """Permite ao cliente ou prestador avaliar o serviço após conclusão."""
     from .models import Review
     from django.utils import timezone
     
     sr = get_object_or_404(ServiceRequest, pk=pk)
 
-    # Verificar se é o prestador ou cliente
     is_provider = hasattr(request.user, 'provider_profile') and request.user.provider_profile == sr.provider
     is_client = request.user == sr.client
 
@@ -436,12 +395,10 @@ def review_service(request, pk):
         messages.error(request, 'Você não tem permissão para avaliar este serviço.')
         return redirect('home')
 
-    # Só pode avaliar se o serviço foi concluído
     if sr.status != ServiceRequest.STATUS_COMPLETED:
         messages.warning(request, 'Apenas serviços concluídos podem ser avaliados.')
         return redirect('request_detail', pk=pk)
 
-    # Buscar ou criar review
     review, created = Review.objects.get_or_create(service_request=sr)
 
     if request.method == 'POST':
@@ -449,7 +406,6 @@ def review_service(request, pk):
         comment = request.POST.get('comment', '').strip()
         photo = request.FILES.get('photo')
 
-        # Validar rating
         try:
             rating = int(rating)
             if rating < 0 or rating > 5:
@@ -459,7 +415,6 @@ def review_service(request, pk):
             messages.error(request, 'Avaliação inválida.')
             return redirect('review_service', pk=pk)
 
-        # Salvar avaliação do cliente
         if is_client:
             if review.client_has_reviewed:
                 messages.warning(request, 'Você já avaliou este serviço.')
@@ -472,7 +427,6 @@ def review_service(request, pk):
                 review.save()
                 messages.success(request, 'Sua avaliação foi registrada com sucesso!')
         
-        # Salvar avaliação do prestador
         elif is_provider:
             if review.provider_has_reviewed:
                 messages.warning(request, 'Você já avaliou este cliente.')

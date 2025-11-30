@@ -7,18 +7,12 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-^hj)fd7_#-*(5zg821(6ivuv1)5&$vt49u83(&xbquinz3ln!q'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]  # Em desenvolvimento pode deixar assim
+ALLOWED_HOSTS = ["*"]
 
-
-# ------------------------
-# APPLICATIONS
-# ------------------------
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,16 +31,9 @@ INSTALLED_APPS = [
 ]
 
 
-# ------------------------
-# MIDDLEWARE (corrigido)
-# ------------------------
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
-    # CORS deve vir logo depois de SecurityMiddleware
     'corsheaders.middleware.CorsMiddleware',
-
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,10 +42,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
-# ------------------------
-# URL / WSGI
-# ------------------------
 
 ROOT_URLCONF = 'fazpramim.urls'
 
@@ -80,10 +63,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'fazpramim.wsgi.application'
 
 
-# ------------------------
-# DATABASE
-# ------------------------
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -91,10 +70,6 @@ DATABASES = {
     }
 }
 
-
-# ------------------------
-# PASSWORD VALIDATION
-# ------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -104,19 +79,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# ------------------------
-# INTERNATIONALIZATION
-# ------------------------
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
-# ------------------------
-# STATIC & MEDIA
-# ------------------------
 
 STATIC_URL = 'static/'
 
@@ -128,59 +95,36 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
 
-# ------------------------
-# CORS / CSRF (corrigido)
-# ------------------------
-
-# Permitir requisições de QUALQUER origem (apenas DEV)
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Para aceitar POST/PUT/DELETE vindos de fora
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1:8000",
     "http://127.0.0.1",
-
     "https://fazpramim-front.onrender.com",
-
 ]
 
-# Para permitir cookies de frontend externo
 CSRF_COOKIE_SAMESITE = None
 SESSION_COOKIE_SAMESITE = None
 
-CSRF_COOKIE_SECURE = False   # Em produção → True
+CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
     
-
-# ------------------------
-# DEFAULTS
-# ------------------------
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# ------------------------
-# API CONFIGURATION (DRF / KNOX)
-# ------------------------
-
 REST_FRAMEWORK = {
-    # Define o Knox como o sistema de autenticação padrão para a API
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'knox.auth.TokenAuthentication',
     ),
-    # Define a permissão padrão como exigindo autenticação
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # Configuração opcional para renderizadores e parsers
-    # 'DEFAULT_RENDERER_CLASSES': ('rest_framework.renderers.JSONRenderer',),
-    # 'DEFAULT_PARSER_CLASSES': ('rest_framework.parsers.JSONParser',),
 }
 
-# Configurações do Knox (Opcional, mas útil)
-# Define por quanto tempo o token será válido (ex: 24 horas)
+
 REST_KNOX = {
-    'TOKEN_TTL': None,  # Exemplo: datetime.timedelta(hours=24) ou None para tokens de longa duração
-    'TOKEN_LIMIT_PER_USER': None, # Limite o número de tokens ativos por usuário (Ex: 3)
+    'TOKEN_TTL': None,
+    'TOKEN_LIMIT_PER_USER': None,
 }

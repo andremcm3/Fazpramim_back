@@ -6,7 +6,7 @@ from .models import ClientProfile, ProviderProfile
 from .models import ServiceRequest
 
 
-# --------- FORMULÁRIO GENÉRICO DE CADASTRO (SE USAR) --------- #
+
 class SignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -22,7 +22,7 @@ class SignUpForm(UserCreationForm):
         return user
 
 
-# --------- CADASTRO DE CLIENTE --------- #
+
 class ClientSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
     full_name = forms.CharField(max_length=255)
@@ -52,13 +52,13 @@ class ClientSignUpForm(UserCreationForm):
         )
 
     def save(self, commit=True):
-        # salva o usuário
+        
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         if commit:
             user.save()
 
-        # cria o perfil de cliente
+        
         ClientProfile.objects.create(
             user=user,
             full_name=self.cleaned_data.get("full_name"),
@@ -73,7 +73,7 @@ class ClientSignUpForm(UserCreationForm):
         return user
 
 
-# --------- CADASTRO DE PRESTADOR --------- #
+
 class ProviderSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
     full_name = forms.CharField(max_length=255)
@@ -108,13 +108,13 @@ class ProviderSignUpForm(UserCreationForm):
         )
 
     def save(self, commit=True):
-        # salva o usuário
+  
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         if commit:
             user.save()
 
-        # cria o perfil de prestador
+    
         ProviderProfile.objects.create(
             user=user,
             full_name=self.cleaned_data.get("full_name"),
@@ -130,7 +130,7 @@ class ProviderSignUpForm(UserCreationForm):
         return user
 
 
-# --------- FORMULÁRIOS DE EDIÇÃO DO PERFIL (MEU PERFIL) --------- #
+
 class ClientProfileForm(forms.ModelForm):
     class Meta:
         model = ClientProfile
@@ -166,7 +166,7 @@ class ServiceRequestForm(forms.ModelForm):
             }),
             "desired_datetime": forms.DateTimeInput(attrs={"type": "datetime-local", "style": "display:block; width:100%; box-sizing:border-box; padding:6px;"}),
         }
-        # add attribute for proposed_value separately (can't set in widgets dict without overwriting)
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['proposed_value'].widget.attrs.update({

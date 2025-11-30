@@ -84,9 +84,8 @@ class ProviderProfileUpdateSerializer(serializers.ModelSerializer):
             })
         return result
 
-# =======================================================
-# 🔍 SERIALIZERS PARA BUSCA E DETALHES (ATUALIZADO)
-# =======================================================
+
+
 
 class PortfolioPhotoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,7 +94,7 @@ class PortfolioPhotoSerializer(serializers.ModelSerializer):
 
 class ReviewPublicSerializer(serializers.ModelSerializer):
     """Mostra apenas o necessário da avaliação no perfil público."""
-    client_name = serializers.ReadOnlyField(source='service_request.client.username') # ou first_name
+    client_name = serializers.ReadOnlyField(source='service_request.client.username') 
     class Meta:
         model = Review
         fields = ['id', 'client_rating', 'client_comment', 'client_photo', 'client_reviewed_at', 'client_name']
@@ -132,7 +131,7 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_reviews(self, obj):
-        # Pega reviews onde o cliente avaliou
+       
         reviews = Review.objects.filter(service_request__provider=obj, client_rating__isnull=False).order_by('-client_reviewed_at')
         return ReviewPublicSerializer(reviews, many=True).data
 
@@ -150,9 +149,7 @@ class ProviderDetailSerializer(serializers.ModelSerializer):
         url = obj.certifications.url
         return [request.build_absolute_uri(url) if request else url]
 
-# =======================================================
-# 🔒 SERIALIZERS DE AUTENTICAÇÃO
-# =======================================================
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
@@ -261,9 +258,7 @@ class ProviderRegisterResponseSerializer(serializers.Serializer):
             return ProviderProfileUpdateSerializer(user.provider_profile).data
         return None
 
-# =======================================================
-# 💬 SERIALIZERS DE CHAT E REVIEW (INPUT)
-# =======================================================
+
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.ReadOnlyField(source='sender.username')
@@ -281,9 +276,7 @@ class ReviewSerializer(serializers.Serializer):
     comment = serializers.CharField(required=False, allow_blank=True)
     photo = serializers.ImageField(required=False)
 
-# =======================================================
-# ✉️ SERIALIZERS DE SOLICITAÇÃO DE SERVIÇO
-# =======================================================
+
 
 class ServiceRequestSerializer(serializers.ModelSerializer):
     client = UserSerializer(read_only=True) 
