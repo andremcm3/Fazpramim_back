@@ -8,3 +8,4 @@ djangorestframework
 django-rest-knox
 dj-database-url
 psycopg2-binary
+Pillow
